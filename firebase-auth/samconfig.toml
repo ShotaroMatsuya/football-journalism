@@ -1,0 +1,12 @@
+version = 0.1
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "firebase-auth-sample"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-17dag1qbzov3x"
+s3_prefix = "firebase-auth-sample"
+region = "ap-northeast-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "FirebaseProjectId=\"vue-http-demo-fa7db\""
+image_repositories = ["AuthFunction=528163014577.dkr.ecr.ap-northeast-1.amazonaws.com/firebaseauthsamplec95503d5/authfunctiona88a6b13repo"]
