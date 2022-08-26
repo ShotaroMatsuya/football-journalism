@@ -11,11 +11,13 @@ export default {
 
     // NOTE: token必要箇所 (Authorization Headerに変える)
     const response = await fetch(
-      `${process.env.VUE_APP_DB_HOST_URL}/journalists/${userId}.json?auth=` +
-        token,
+      `${process.env.VUE_APP_DB_HOST_URL}/journalist/${userId}`,
       {
         method: 'PUT',
         body: JSON.stringify(journalistData),
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       }
     );
 
@@ -36,7 +38,7 @@ export default {
     }
 
     const response = await fetch(
-      `${process.env.VUE_APP_DB_HOST_URL}/journalists.json`
+      `${process.env.VUE_APP_DB_HOST_URL}/journalist`
     );
     const responseData = await response.json();
 
