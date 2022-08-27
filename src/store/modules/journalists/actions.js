@@ -9,7 +9,6 @@ export default {
     };
     const token = context.rootGetters.token;
 
-    // NOTE: token必要箇所 (Authorization Headerに変える)
     const response = await fetch(
       `${process.env.VUE_APP_DB_HOST_URL}/journalist/${userId}`,
       {
