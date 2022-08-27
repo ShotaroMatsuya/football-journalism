@@ -47,12 +47,11 @@ export default {
     };
     const newArticles = [...oldArticles, articleData];
     const token = context.rootGetters.token;
-    // NOTE: token必要箇所（Authorization Headerに変える）
     const response = await fetch(
-      `${process.env.VUE_APP_DB_HOST_URL}/articles/${userId}` + token,
+      `${process.env.VUE_APP_DB_HOST_URL}/articles/${userId}`,
       {
         method: 'PUT',
-        body: JSON.stringify(newArticles),
+        body: JSON.stringify(articleData),
         headers: {
           Authorization: `Bearer ${token}`,
         },
