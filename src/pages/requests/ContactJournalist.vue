@@ -33,12 +33,12 @@ export default {
         this.formIsValid = false;
         return;
       }
-      this.$store.dispatch('requests/contactCoach', {
+      this.$store.dispatch('requests/contactJournalist', {
         username: this.username,
         message: this.message,
-        coachId: this.$route.params.id,
+        journalistId: this.$route.params.id,
       });
-      this.$router.replace('/coaches');
+      this.$router.replace('/journalists');
     },
   },
 };

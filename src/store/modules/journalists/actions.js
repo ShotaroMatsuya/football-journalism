@@ -49,7 +49,7 @@ export default {
 
     for (const key in responseData) {
       const journalist = {
-        id: key,
+        id: responseData[key].id,
         username: responseData[key].username,
         accountName: responseData[key].accountName,
         description: responseData[key].description,

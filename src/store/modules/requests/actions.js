@@ -3,6 +3,7 @@ export default {
     const newRequest = {
       username: payload.username,
       message: payload.message,
+      created_at: new Date().toISOString(),
     };
     const response = await fetch(
       `${process.env.VUE_APP_DB_HOST_URL}/requests/${payload.journalistId}`,
@@ -44,7 +45,7 @@ export default {
 
     for (const key in responseData) {
       const request = {
-        id: key,
+        id: responseData[key].id,
         journalistId: journalistId,
         username: responseData[key].username,
         message: responseData[key].message,
