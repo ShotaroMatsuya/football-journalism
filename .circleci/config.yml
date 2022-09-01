@@ -57,11 +57,11 @@ jobs:
           command: |
             npm install
             npm run build
-            cd build
-            zip ../build.zpi -r * .[^.]*
+            cd dist
+            zip ../dist.zpi -r * .[^.]*
             echo "Build successful"
       - run:
-          name: Deploy to FIrebase Hosting
+          name: Deploy to Firebase Hosting
           command: ./node_modules/.bin/firebase deploy --token=${FIREBASE_TOKEN}
   notify-via-slack:
     executor: slack-executor
