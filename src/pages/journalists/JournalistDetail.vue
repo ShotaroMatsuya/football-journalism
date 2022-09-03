@@ -12,7 +12,7 @@
     </div>
     <div v-else>
       <section>
-        <base-card>
+        <base-card v-cloak>
           <h2>{{ username }}</h2>
           <h3>@{{ accountName }}</h3>
           <base-badge
@@ -110,8 +110,10 @@ export default {
     },
   },
   async created() {
+    this.isLoading = true;
     await this.fetchJournalist();
     await this.loadArticles();
+    this.isLoading = false;
   },
   methods: {
     openForm() {
@@ -133,7 +135,6 @@ export default {
       }
     },
     async loadArticles(refresh = false) {
-      this.isLoading = true;
       try {
         await this.$store.dispatch('articles/loadArticles', {
           forceRefresh: refresh,
@@ -143,8 +144,6 @@ export default {
       } catch (error) {
         this.error = error.message || 'Something went wrong!';
       }
-
-      this.isLoading = false;
     },
     handleError() {
       this.error = null;
@@ -154,6 +153,9 @@ export default {
 </script>
 
 <style scoped>
+[v-cloak] {
+  display: none;
+}
 .spinner {
   margin-top: 3.5rem;
 }
