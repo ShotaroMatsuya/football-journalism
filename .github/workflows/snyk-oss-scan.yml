@@ -1,0 +1,364 @@
+name: Snyk OSS vulnerability Notification
+on:
+  pull_request:
+    branches: [develop]
+    types: [opened, synchronize, labeled]
+env:
+  SNYK_LINUX_VERSION: '1.1071.0'
+defaults:
+  run:
+    working-directory: .
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    if: |
+      ((github.event.action == 'labeled') && ((github.event.label.name == 'Snyk-full') || (github.event.label.name == 'Snyk-oss'))) ||
+      ((github.event.action == 'synchronize') && (contains(github.event.pull_request.labels.*.name, 'Snyk-full') || contains(github.event.pull_request.labels.*.name, 'Snyk-oss')))
+    steps:
+      - name: Checkout
+        uses: actions/checkout@master
+      - name: Set up Ruby 2.7
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '2.7'
+      - name: Set AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-1
+      - name: Install Snyk & Authenticate with snyk
+        run: |
+          snyk_version=${{ env.SNYK_LINUX_VERSION }}
+          echo "Install Snyk CLI V${snyk_version}"
+          curl -Lo ./snyk "https://static.snyk.io/cli/v${snyk_version}/snyk-linux"
+          chmod -R +x ./snyk
+          mv ./snyk /usr/local/bin
+          npm install snyk-to-html -g
+          snyk config set api="${{ secrets.SNYK_TOKEN }}"
+      - name: Run Snyk to check for OSS vulnerabilities(summary)
+        if: |
+          github.event.action == 'labeled' && (contains(github.event.pull_request.labels.*.name, 'Snyk-full') || contains(github.event.pull_request.labels.*.name, 'Snyk-oss')) ||
+          github.event.action == 'synchronize' && (contains(github.event.pull_request.labels.*.name, 'Snyk-full') || contains(github.event.pull_request.labels.*.name, 'Snyk-oss'))
+        id: error_execution
+        run: |
+          ls -l
+          snyk test --json --file=package.json | tee >(jq . > results-package.json) | snyk-to-html -o results-package.html
+          echo "Upload results to s3"
+          aws s3 cp results-package.html s3://smat710-snyk-output/football-journal/
+          vul_res=$(cat ./results-package.json | ruby -rjson -ryaml -e 'puts JSON.pretty_generate(JSON.load(ARGF))')
+          slack_hook_url=${{ secrets.SLACK_INCOMING_WEBHOOK_URL }}
+          channel="${{ secrets.SLACK_CHANNEL }}"
+          project_name=$(echo $GITHUB_REPOSITORY | cut -d '/' -f2)
+          branch_name="$GITHUB_REF"
+          author_name="${{ github.actor }}"
+          pr_id=$(echo ${{ github.ref_name }} | cut -d '/' -f1)
+          snyk_prj_name=$project_name
+          snyk_prj_url="https://app.snyk.io/org/shotaromatsuya/project/${{ secrets.SNYK_PROJECT_ID }}"
+          if [ -n "$vul_res" ]; then total_count=$(echo $vul_res | jq -r '.dependencyCount'); unique_count=$(echo $vul_res | jq -r '.uniqueCount'); summary=$(echo $vul_res | jq -r '.summary'); CRITICAL_COUNT=0; HIGH_COUNT=0; MEDIUM_COUNT=0; LOW_COUNT=0; for c in $(echo $vul_res | jq -r '.vulnerabilities[].severity'); do if [ $c = "critical" ]; then((CRITICAL_COUNT+=1)); fi; if [ $c = "high" ]; then ((HIGH_COUNT+=1)); fi; if [ $c = "medium" ]; then ((MEDIUM_COUNT+=1)); fi; if [ $c = "low" ]; then ((LOW_COUNT+=1)); fi; done; fi
+
+          RESULT=`curl -X POST $slack_hook_url --data-urlencode \
+            'payload={
+            "channel": "'"$channel"'",
+            "username": "SnykBot",
+            "icon_emoji": ":github:",
+            "text": "OSS vulnerability Result",
+            "blocks": [
+              {
+                "type": "header",
+                "text": {
+                  "type": "plain_text",
+                  "text": ":snyk:[REPORT]OSS vulnerabilities analysis:snyk:"
+                },
+              },
+              {
+                "type": "section",
+                "fields": [
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Project*:\n'"$project_name"'"
+                  },
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Branch*:\n'"$branch_name"'"
+                  }
+                ]
+              },
+              {
+                "type": "section",
+                "fields": [
+                  {
+                    "type": "mrkdwn",
+                    "text": "*When*:\n'"$(date +'%Y/%m/%d %T')"'"
+                  },
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Author*:\n'"$author_name"'"
+                  }
+                ]
+              },
+              {
+                "type": "actions",
+                "block_id": "actionblock789",
+                "elements": [
+                  {
+                    "type": "button",
+                    "text": {
+                      "type": "plain_text",
+                      "text": "View PR"
+                    },
+                    "url": "https://github.com/shotaromatsuya/'"$project_name"'/pull/'"$pr_id"'"
+                  }
+                ]
+              },
+              {
+                "type": "divider"
+              }
+            ],
+            "attachments": [
+              {
+                "color": "#4B0082",
+                "blocks": [
+                  {
+                    "type": "section",
+                    "text": {
+                      "type": "mrkdwn",
+                      "text": "*'"$CRITICAL_COUNT"'* Critical/ *'"$HIGH_COUNT"'* High/ *'"$MEDIUM_COUNT"'* Medium/ *'"$LOW_COUNT"'* Low"
+                    },
+                    "accessory": {
+                      "type": "image",
+                      "image_url": "https://cdn.changelog.com/uploads/icons/news_sources/oeY/icon_small.png",
+                      "alt_text": "snyk-logo image"
+                    }
+                  },
+                  {
+                    "type": "section",
+                    "text": {
+                      "type": "mrkdwn",
+                      "text": "Tested *'"$total_count"'* dependencies for known issues, Found *'"$unique_count"'* issues, *'"$summary"'*"
+                    }
+                  },
+                  {
+                    "type": "actions",
+                    "block_id": "actionblock790",
+                    "elements": [
+                      {
+                        "type": "button",
+                        "text": {
+                          "type": "plain_text",
+                          "text": "Detail"
+                        },
+                        "style": "primary",
+                        "url": "'"${{ secrets.OSS_RESULTS_HTML_URL  }}"'"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "context",
+                    "elements": [
+                      {
+                        "type": "image",
+                        "image_url": "https://cdn.changelog.com/uploads/icons/news_sources/oeY/icon_small.png",
+                        "alt_text": "snyk"
+                      },
+                      {
+                        "type": "mrkdwn",
+                        "text": "<https://app.snyk.io/org/shotaromatsuya|Organization: shotaromatsuya>"
+                      },
+                      {
+                        "type": "mrkdwn",
+                        "text": "<'"$snyk_prj_url"'|Project: '"$snyk_prj_name"'>"
+                      },
+                      {
+                        "type": "mrkdwn",
+                        "text": "<!date^'$(date +%s)'^{date_pretty} at {time}|Posted>"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }'`
+          echo $RESULT
+      - name: Run Snyk to check for OSS vulnerabilities(verbose)
+        if: |
+          github.event.action == 'labeled' && github.event.label.name == 'Verbose' && (contains(github.event.pull_request.labels.*.name, 'Snyk-full') || contains(github.event.pull_request.labels.*.name, 'Snyk-oss')) ||
+          github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'Verbose') && (contains(github.event.pull_request.labels.*.name, 'Snyk-full') || contains(github.event.pull_request.labels.*.name, 'Snyk-oss'))
+        id: error_execution2
+        run: |
+          ls -l
+          vul_res=$(cat ./results-package.json | ruby -rjson -ryaml -e 'puts JSON.pretty_generate(JSON.load(ARGF))')
+          IFS_BACKUP=$IFS
+          IFS=$'\n'
+          slack_hook_url=${{ secrets.SLACK_INCOMING_WEBHOOK_URL }}
+          channel="${{ secrets.SLACK_CHANNEL }}"
+          project_name=$(echo $GITHUB_REPOSITORY | cut -d '/' -f2)
+          executor=":github:"
+          snyk_prj_name=$project_name
+          snyk_prj_url="https://app.snyk.io/org/shotaromatsuya/project/${{ secrets.SNYK_PROJECT_ID }}"
+          array_end_index="$(echo $vul_res | jq -r '.vulnerabilities | length - 1')"
+          for index in $(seq 0 "${array_end_index}"); do
+            severity=$(echo $vul_res | jq -r ".vulnerabilities[${index}].severity")
+            vul_lib=$(echo $vul_res | jq -r ".vulnerabilities[${index}].moduleName")
+            vul_desc=$(echo $vul_res | jq -r ".vulnerabilities[${index}].description" | tr "\`" "'")
+            vul_title=$(echo $vul_res | jq -r ".vulnerabilities[${index}].title")
+            vul_url="https://security.snyk.io/vuln/$(echo $vul_res | jq -r ".vulnerabilities[${index}].id")"
+            vul_fixed_ins=($(echo $vul_res | jq -r ".vulnerabilities[${index}].fixedIn[]"))
+            vul_versions=($(echo $vul_res | jq -r ".vulnerabilities[${index}].semver.vulnerable[]"))
+            created_at=$(echo $vul_res | jq -r ".vulnerabilities[${index}].creationTime" | xargs -I {} date -d {} +'%Y-%m-%d %H:%M:%S')
+            updated_at=$(echo $vul_res | jq -r ".vulnerabilities[${index}].modificationTime" | xargs -I {} date -d {} +'%Y-%m-%d %H:%M:%S')
+            if [ $(echo $vul_desc | wc -m) -gt 2950 ]; then echo "exceed characters limit"; vul_desc=$(echo $vul_desc | cut -c -2950); vul_desc+=" ...";fi
+            color=""; emoji="";
+            if [ -n $severity ]; then if [ $severity = "critical" ]; then color="#FF0000";emoji=":red_circle:"; fi; if [ $severity = "high" ]; then color="#FF8C00";emoji=":large_orange_circle:"; fi;if [ $severity = "medium" ]; then color="#FFFF00";emoji=":large_yellow_circle:"; fi; if [ $severity = "low" ]; then color="#C0C0C0";emoji=":white_circle:"; fi; severity=$(echo $severity | awk '{print toupper(substr($0, 1, 1)) substr($0, 2, length($0) - 1)}'); fi
+            str="`declare -p vul_fixed_ins 2>/dev/null`"
+            if [ "${str:0:10}" = 'declare -a' ]; then ITEM=; for v in "${vul_fixed_ins[@]}";do ITEM+="- $v\n"; done; FORMATTED_FIXEDINS=$ITEM; fi
+            str="`declare -p vul_versions 2>/dev/null`"
+            if [ "${str:0:10}" = 'declare -a' ]; then ITEM=; for v in "${vul_versions[@]}"; do ITEM+="- $v\n"; done; FORMATTED_VUL_VERSIONS=$ITEM; fi
+            IFS=$IFS_BACKUP
+            RESULT=`curl -X POST $slack_hook_url --data-urlencode \
+              'payload={
+              "channel": "'"$channel"'",
+              "username": "SnykBot",
+              "icon_emoji": "'"$executor"'",
+              "text": "OSS vulnerability Verbose",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "'"$emoji"' ['"$severity"'] vulnerability found in '"$vul_lib"'"
+                  }
+                }
+              ],
+              "attachments": [
+                {
+                  "color": "'"$color"'",
+                  "blocks": [
+                    {
+                      "type": "header",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "'"$vul_title"'"
+                      }
+                    },
+                    {
+                      "type": "section",
+                      "text":  {
+                        "type": "mrkdwn",
+                        "text": "*Description:*\n\`\`\`'"$vul_desc"'\`\`\`",
+                        }
+                    },
+                    {
+                      "type": "divider"
+                    },
+                    {
+                      "type": "section",
+                      "fields": [
+                        {
+                          "type": "mrkdwn",
+                          "text": "*Vulnerabilities:*\n'"$FORMATTED_VUL_VERSIONS"'"
+                        },
+                        {
+                          "type": "mrkdwn",
+                          "text": "*FixedIn:*\n'"$FORMATTED_FIXEDINS"'"
+                        },
+                        {
+                          "type": "mrkdwn",
+                          "text": "*CreationTime:*\n'"$created_at"'"
+                        },
+                        {
+                          "type": "mrkdwn",
+                          "text": "*ModificationTime:*\n'"$updated_at"'"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "actions",
+                      "block_id": "actionblock790",
+                      "elements": [
+                        {
+                          "type": "button",
+                          "text": {
+                            "type": "plain_text",
+                            "text": "Detail"
+                          },
+                          "style": "danger",
+                          "url": "'"$vul_url"'"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "context",
+                      "elements": [
+                        {
+                          "type": "image",
+                          "image_url": "https://cdn.changelog.com/uploads/icons/news_sources/oeY/icon_small.png",
+                          "alt_text": "snyk"
+                        },
+                        {
+                          "type": "mrkdwn",
+                          "text": "<https://app.snyk.io/org/shotaromatsuya|Organization: shotaromatsuya>"
+                        },
+                        {
+                          "type": "mrkdwn",
+                          "text": "<'"$snyk_prj_url"'|Project: '"$snyk_prj_name"'>"
+                        },
+                        {
+                          "type": "mrkdwn",
+                          "text": "<!date^'$(date +%s)'^{date_pretty} at {time}|Posted>"
+                        }
+                      ]
+                    },
+                  ],
+                }
+              ]
+            }'`
+            echo $RESULT
+          done
+      - name: Notify slack when job failed
+        if: ${{ failure() }}
+        uses: slackapi/slack-github-action@v1.16.0
+        with:
+          payload: |
+            {
+              "text": "Githubアクション失敗\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":github: アクション結果: ${{ job.status }}\n\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*GitHub Actions URL*:\nhttps://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Pull Request URL*:\nhttps://github.com/${{ github.repository }}/pull/${{ github.event.number }}"
+                    }
+                  ]
+                },
+                {
+                  "type": "context",
+                  "elements": [
+                    {
+                      "type": "image",
+                      "image_url": "${{ github.event.sender.avatar_url }}",
+                      "alt_text": "avatar"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "Author: ${{ github.actor }}"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_INCOMING_WEBHOOK_URL }}
