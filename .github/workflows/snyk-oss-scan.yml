@@ -1,7 +1,7 @@
 name: Snyk OSS vulnerability Notification
 on:
   pull_request:
-    branches: [develop]
+    branches: [main]
     types: [opened, synchronize, labeled]
 env:
   SNYK_LINUX_VERSION: '1.1071.0'
