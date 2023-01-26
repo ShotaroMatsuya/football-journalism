@@ -1,0 +1,336 @@
+name: Snyk Static Code Analysis Notification
+on:
+  pull_request:
+    branches: [develop]
+    types: [opened, synchronize, labeled]
+env:
+  SNYK_LINUX_VERSION: '1.1071.0'
+defaults:
+  run:
+    working-directory: .
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    if: |
+      ((github.event.action == 'labeled') && ((github.event.label.name == 'Snyk-full') || (github.event.label.name == 'Snyk-code'))) ||
+      ((github.event.action == 'synchronize') && (contains(github.event.pull_request.labels.*.name, 'Snyk-full') || contains(github.event.pull_request.labels.*.name, 'Snyk-code')))
+    steps:
+      - name: Checkout
+        uses: actions/checkout@master
+      - name: Set up Ruby 2.7
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '2.7'
+      - name: Set AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-1
+      - name: Install Snyk & Authenticate with snyk
+        run: |
+          snyk_version=${{ env.SNYK_LINUX_VERSION }}
+          echo "Install Snyk CLI V${snyk_version}"
+          curl -Lo ./snyk "https://static.snyk.io/cli/v${snyk_version}/snyk-linux"
+          chmod -R +x ./snyk
+          mv ./snyk /usr/local/bin
+          npm install snyk-to-html -g
+          snyk config set api="${{ secrets.SNYK_TOKEN }}"
+      - name: Run Snyk to check for Code vulnerabilities(summary)
+        if: |
+          github.event.action == 'labeled' && (contains(github.event.pull_request.labels.*.name, 'Snyk-full') || contains(github.event.pull_request.labels.*.name, 'Snyk-code')) || 
+          github.event.action == 'synchronize' && (contains(github.event.pull_request.labels.*.name, 'Snyk-full') || contains(github.event.pull_request.labels.*.name, 'Snyk-code'))
+        id: error_execution
+        run: |
+          ls -l
+          snyk code test --json | tee >(jq . > results-code.json) | snyk-to-html -o results-code.html
+          echo "Upload results to s3"
+          aws s3 cp results-code.html s3://smat710-snyk-output/football-journal/
+          vul_res=$(cat ./results-code.json | ruby -rjson -ryaml -e 'puts JSON.pretty_generate(JSON.load(ARGF))')
+          slack_hook_url=${{ secrets.SLACK_INCOMING_WEBHOOK_URL }}
+          channel="${{ secrets.SLACK_CHANNEL }}"
+          project_name=$(echo $GITHUB_REPOSITORY | cut -d '/' -f2)
+          branch_name="$GITHUB_REF"
+          author_name="${{ github.actor }}"
+          pr_id=$(echo ${{ github.ref_name }} | cut -d '/' -f1)
+          snyk_prj_name=$project_name
+          snyk_prj_url="https://app.snyk.io/org/shotaromatsuya/project/${{ secrets.SNYK_CODE_PROJECT_ID }}"
+          ERROR_COUNT=0;WARNING_COUNT=0;NOTE_COUNT=0;COV_RES=""
+          for cov in $(echo $vul_res | jq -r 'if .runs[]?.properties?.coverage? then .runs[].properties.coverage[] else "" end | if .isSupported == true then "\(.lang)=\(.files)" else empty end');do lang=$(echo $cov | cut -d '=' -f1); files=$(echo $cov | cut -d '=' -f2);COV_RES+="Language: *$lang* , Counts: *$files* files\n";done
+          for c in $(echo $vul_res | jq -r '.runs[].results[].level');do if [ $c = "error" ];then ((ERROR_COUNT+=1)); fi; if [ $c = "warning" ]; then ((WARNING_COUNT+=1)); fi; if [ $c = "note/info" ]; then ((NOTE_COUNT+=1)); fi ; done
+          RESULT=`curl -X POST $slack_hook_url --data-urlencode \
+            'payload={
+            "channel": "'"$channel"'",
+            "username": "SnykBot",
+            "icon_emoji": ":github:",
+            "text": "Static code analysis Result",
+            "blocks": [
+              {
+                "type": "header",
+                "text": {
+                  "type": "plain_text",
+                  "text": ":snyk:[REPORT]Static code analysis:snyk:"
+                },
+              },
+              {
+                "type": "section",
+                "fields": [
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Project*:\n'"$project_name"'"
+                  },
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Branch*:\n'"$branch_name"'"
+                  }
+                ]
+              },
+              {
+                "type": "section",
+                "fields": [
+                  {
+                    "type": "mrkdwn",
+                    "text": "*When*:\n'"$(date +'%Y/%m/%d %T')"'"
+                  },
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Author*:\n'"$author_name"'"
+                  }
+                ]
+              },
+              {
+                "type": "actions",
+                "block_id": "actionblock789",
+                "elements": [
+                  {
+                    "type": "button",
+                    "text": {
+                      "type": "plain_text",
+                      "text": "View PR"
+                    },
+                    "url": "https://github.com/shotaromatsuya/'"$project_name"'/pull/'"$pr_id"'"
+                  }
+                ]
+              },
+              {
+                "type": "divider"
+              }
+            ],
+            "attachments": [
+              {
+                "color": "#4B0082",
+                "blocks": [
+                  {
+                    "type": "section",
+                    "text": {
+                      "type": "mrkdwn",
+                      "text": "*'"$ERROR_COUNT"'* Error/ *'"$WARNING_COUNT"'* Warning/ *'"$NOTE_COUNT"'* Note\n\n'"$COV_RES"'"
+                    },
+                    "accessory": {
+                      "type": "image",
+                      "image_url": "https://cdn.changelog.com/uploads/icons/news_sources/oeY/icon_small.png",
+                      "alt_text": "snyk-logo image"
+                    }
+                  },
+                  {
+                    "type": "section",
+                    "fields": [
+                      {
+                        "type": "mrkdwn",
+                        "text": "*Organization:*\n shotaromatsuya"
+                      },
+                      {
+                        "type": "mrkdwn",
+                        "text": "*Project name:*\n '"$project_name"'"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "actions",
+                    "block_id": "actionblock790",
+                    "elements": [
+                      {
+                        "type": "button",
+                        "text": {
+                          "type": "plain_text",
+                          "text": "Detail"
+                        },
+                        "style": "primary",
+                        "url": "'"${{ secrets.CODE_RESULTS_HTML_URL  }}"'"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "context",
+                    "elements": [
+                      {
+                        "type": "image",
+                        "image_url": "https://cdn.changelog.com/uploads/icons/news_sources/oeY/icon_small.png",
+                        "alt_text": "snyk"
+                      },
+                      {
+                        "type": "mrkdwn",
+                        "text": "<https://app.snyk.io/org/shotaromatsuya|Organization: shotaromatsuya>"
+                      },
+                      {
+                        "type": "mrkdwn",
+                        "text": "<'"$snyk_prj_url"'|Project: '"$snyk_prj_name"'>"
+                      },
+                      {
+                        "type": "mrkdwn",
+                        "text": "<!date^'$(date +%s)'^{date_pretty} at {time}|Posted>"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }'`
+          echo $RESULT
+      - name: Run Snyk to check for Code vulnerabilities(verbose)
+        if: |
+          github.event.action == 'labeled' && github.event.label.name == 'Verbose' && (contains(github.event.pull_request.labels.*.name, 'Snyk-full') || contains(github.event.pull_request.labels.*.name, 'Snyk-code')) ||
+          github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'Verbose') && (contains(github.event.pull_request.labels.*.name, 'Snyk-full') || contains(github.event.pull_request.labels.*.name, 'Snyk-code'))
+        id: error_execution2
+        run: |
+          ls -l
+          vul_res=$(cat ./results-code.json | ruby -rjson -ryaml -e 'puts JSON.pretty_generate(JSON.load(ARGF))')
+          IFS_BACKUP=$IFS
+          IFS=$'\n'
+          slack_hook_url=${{ secrets.SLACK_INCOMING_WEBHOOK_URL }}
+          channel="${{ secrets.SLACK_CHANNEL }}"
+          project_name=$(echo $GITHUB_REPOSITORY | cut -d '/' -f2)
+          executor=":github:"
+          snyk_prj_name=$project_name
+          snyk_prj_url="https://app.snyk.io/org/shotaromatsuya/project/${{ secrets.SNYK_CODE_PROJECT_ID }}"
+          array_end_index="$(echo $vul_res | jq -r '.runs[].tool.driver.rules | length - 1')"
+          for index in $(seq 0 "${array_end_index}"); do
+            severity=$(echo $vul_res | jq -r ".runs[].tool.driver.rules[${index}].defaultConfiguration.level")
+            vul_title=$(echo $vul_res | jq -r ".runs[].tool.driver.rules[${index}].shortDescription.text")
+            vul_path=$(echo $vul_res | jq -r ".runs[].results[${index}].locations[0].physicalLocation.artifactLocation.uri")
+            vul_info=$(echo $vul_res | jq -r ".runs[].results[${index}].message.markdown" | tr "\`" "'")
+            vul_desc=$(echo $vul_res | jq -r ".runs[].tool.driver.rules[${index}].help.markdown" | tr "\`" "'")
+            if [ $(echo $vul_desc | wc -m) -gt 2950 ]; then echo "exceed characters limit"; vul_desc=$(echo $vul_desc | cut -c -2950); vul_desc+=" ...";fi
+            color=""; emoji=""
+            if [ -n $severity ]; then if [ $severity = "error" ]; then color="#FF6347";emoji=":large_orange_circle:"; fi; if [ $severity = "warning" ]; then color="#FFFF00";emoji=":large_yellow_circle:"; fi;if [ $severity = "note/info" ]; then color="#C0C0C0";emoji=":white_circle:"; fi; severity=$(echo $severity | awk '{print toupper(substr($0, 1, 1)) substr($0, 2, length($0) - 1)}'); fi
+            vul_reg=(); for region in $(echo $vul_res | jq -r ".runs[].results[${index}].locations[].physicalLocation.region | [.startLine, .endLine, .startColumn, .endColumn] | .[]");do vul_reg+=($region);done ;
+            str="`declare -p vul_reg 2>/dev/null`"
+            if [ "${str:0:10}" = 'declare -a' ]; then START_LINE=${vul_reg[0]}; END_LINE=${vul_reg[1]}; START_COLUMN=${vul_reg[2]}; END_COLUMN=${vul_reg[3]};FORMATTED_VUL_REG="*Location:*\n${START_LINE} line ${START_COLUMN} 〜 ${END_LINE} line ${END_COLUMN}"; fi
+            IFS=$IFS_BACKUP
+            RESULT=`curl -X POST $slack_hook_url --data-urlencode \
+              'payload={
+              "channel": "'"$channel"'",
+              "username": "SnykBot",
+              "icon_emoji": "'"$executor"'",
+              "text": "Static code analysis Verbose",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "'"$emoji"' ['"$severity"'] '"$vul_title"'"
+                  }
+                }
+              ],
+              "attachments": [
+                {
+                  "color": "'"$color"'",
+                  "blocks": [
+                    {
+                      "type": "section",
+                      "text":  {
+                        "type": "mrkdwn",
+                        "text": "*Description:*\n\`\`\`'"$vul_desc"'\`\`\`",
+                        }
+                    },
+                    {
+                      "type": "divider"
+                    },
+                    {
+                      "type": "section",
+                      "fields": [
+                        {
+                          "type": "mrkdwn",
+                          "text": "*Path:*\n'"$vul_path"'\n\n'"$FORMATTED_VUL_REG"'"
+                        },
+                        {
+                          "type": "mrkdwn",
+                          "text": "*Info:*\n'"$vul_info"'"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "context",
+                      "elements": [
+                        {
+                          "type": "image",
+                          "image_url": "https://cdn.changelog.com/uploads/icons/news_sources/oeY/icon_small.png",
+                          "alt_text": "snyk"
+                        },
+                        {
+                          "type": "mrkdwn",
+                          "text": "<https://app.snyk.io/org/shotaromatsuya|Organization: shotaromatsuya>"
+                        },
+                        {
+                          "type": "mrkdwn",
+                          "text": "<'"$snyk_prj_url"'|Project: '"$snyk_prj_name"'>"
+                        },
+                        {
+                          "type": "mrkdwn",
+                          "text": "<!date^'$(date +%s)'^{date_pretty} at {time}|Posted>"
+                        }
+                      ]
+                    },
+                  ],
+                }
+              ]
+            }'`
+            echo $RESULT
+          done
+      - name: Notify slack when job failed
+        if: ${{ failure() }}
+        uses: slackapi/slack-github-action@v1.16.0
+        with:
+          payload: |
+            {
+              "text": "Githubアクション失敗\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":github: アクション結果: ${{ job.status }}\n\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*GitHub Actions URL*:\nhttps://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Pull Request URL*:\nhttps://github.com/${{ github.repository }}/pull/${{ github.event.number }}"
+                    }
+                  ]
+                },
+                {
+                  "type": "context",
+                  "elements": [
+                    {
+                      "type": "image",
+                      "image_url": "${{ github.event.sender.avatar_url }}",
+                      "alt_text": "avatar"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "Author: ${{ github.actor }}"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_INCOMING_WEBHOOK_URL }}
