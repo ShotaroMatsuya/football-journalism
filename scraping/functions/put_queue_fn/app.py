@@ -64,13 +64,10 @@ def key_list(filename):
 def lambda_handler(event, context):
     """main."""
     try:
-        filelist = ["get_key_list.txt"]
-        for f in filelist:
-            # for i in key_list(f):
-            for i in ["whoscored", "fabrizioromano", "sofascoreint", "shotaro59432703"]:
-                result = get_item(i)
-                put_sqs(result)
-                # 1秒スリープ処理
-                sleep(1)
+        for i in ["whoscored", "fabrizioromano", "sofascoreint", "shotaro59432703"]:
+            result = get_item(i)
+            put_sqs(result)
+            # 1秒スリープ処理
+            sleep(1)
     except Exception as e:
         raise e
