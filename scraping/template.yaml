@@ -25,32 +25,29 @@ Parameters:
     Default: matsuya@h01.itscom.net
 
 Resources:
-  # StockTradingStateMachine:
-  #   Type: AWS::Serverless::StateMachine
-  #   Properties:
-  #     DefinitionUri: statemachine/stock_trader.asl.json
-  #     DefinitionSubstitutions:
-  #       StockCheckerFunctionArn: !GetAtt StockCheckerFunction.Arn
-  #       StockSellerFunctionArn: !GetAtt StockSellerFunction.Arn
-  #       StockBuyerFunctionArn: !GetAtt StockBuyerFunction.Arn
-  #       DDBPutItem: !Sub arn:${AWS::Partition}:states:::dynamodb:putItem
-  #       DDBTable: !Ref TransactionTable
-  #     Events:
-  #       HourlyTradingSchedule:
-  #         Type: Schedule
-  #         Properties:
-  #           Description: Schedule to run the stock trading state machine every hour
-  #           Enabled: False
-  #           Schedule: 'rate(1 hour)'
-  #     Policies:
-  #       - LambdaInvokePolicy:
-  #           FunctionName: !Ref StockCheckerFunction
-  #       - LambdaInvokePolicy:
-  #           FunctionName: !Ref StockSellerFunction
-  #       - LambdaInvokePolicy:
-  #           FunctionName: !Ref StockBuyerFunction
-  #       - DynamoDBWritePolicy:
-  #           TableName: !Ref TransactionTable
+  ScrapingStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Tracing:
+        Enabled: true
+      DefinitionUri: statemachine/ScrapingMachine.asl.json
+      DefinitionSubstitutions:
+        TwitterFunctionArn: !GetAtt TwitterFunction.Arn
+        NotificationFunctionArn: !GetAtt NotificationFunction.Arn
+        PutQueueFunctionArn: !GetAtt PutQueueFunction.Arn
+      Events:
+        CrontabSchedule:
+          Type: Schedule
+          Properties:
+            Enabled: True
+            Schedule: 'cron(0 0,3,9,13 * * ? *)'
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref TwitterFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref NotificationFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref PutQueueFunction
 
   TwitterFunction:
     Type: AWS::Serverless::Function
