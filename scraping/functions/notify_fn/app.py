@@ -2,6 +2,9 @@ import json
 import os
 
 import boto3
+from aws_xray_sdk.core import patch_all
+
+patch_all()
 
 sns_client = boto3.client("sns")
 table_name = os.environ.get("DYNAMODB_SCRAPING_TABLE", "Scraping")
