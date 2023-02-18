@@ -1,0 +1,198 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  scraping
+
+  Sample SAM Template for scraping
+
+Globals:
+  Function:
+    Tracing: Active
+    Timeout: 3
+
+Parameters:
+  ScrapingTableName:
+    Type: String
+    Default: Scrapings
+  ArticleTableName:
+    Type: String
+    Default: Articles
+  Region:
+    Type: String
+    Default: ap-northeast-1
+  EMAIL:
+    Type: String
+    Default: matsuya@h01.itscom.net
+
+Resources:
+  # StockTradingStateMachine:
+  #   Type: AWS::Serverless::StateMachine
+  #   Properties:
+  #     DefinitionUri: statemachine/stock_trader.asl.json
+  #     DefinitionSubstitutions:
+  #       StockCheckerFunctionArn: !GetAtt StockCheckerFunction.Arn
+  #       StockSellerFunctionArn: !GetAtt StockSellerFunction.Arn
+  #       StockBuyerFunctionArn: !GetAtt StockBuyerFunction.Arn
+  #       DDBPutItem: !Sub arn:${AWS::Partition}:states:::dynamodb:putItem
+  #       DDBTable: !Ref TransactionTable
+  #     Events:
+  #       HourlyTradingSchedule:
+  #         Type: Schedule
+  #         Properties:
+  #           Description: Schedule to run the stock trading state machine every hour
+  #           Enabled: False
+  #           Schedule: 'rate(1 hour)'
+  #     Policies:
+  #       - LambdaInvokePolicy:
+  #           FunctionName: !Ref StockCheckerFunction
+  #       - LambdaInvokePolicy:
+  #           FunctionName: !Ref StockSellerFunction
+  #       - LambdaInvokePolicy:
+  #           FunctionName: !Ref StockBuyerFunction
+  #       - DynamoDBWritePolicy:
+  #           TableName: !Ref TransactionTable
+
+  TwitterFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/twitter_fn
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Timeout: 30
+      Architectures:
+        - x86_64
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ScrapingsTable
+      Environment:
+        Variables:
+          DYNAMODB_SCRAPING_TABLE: !Ref ScrapingTableName
+          REGION_NAME: !Ref Region
+          API_KEY: '{{resolve:secretsmanager:fj_app/twitter:SecretString:api_key}}'
+          API_KEY_SECRET: '{{resolve:secretsmanager:fj_app/twitter:SecretString:api_key_secret}}'
+          ACCESS_TOKEN: '{{resolve:secretsmanager:fj_app/twitter:SecretString:access_token}}'
+          ACCESS_TOKEN_SECRET: '{{resolve:secretsmanager:fj_app/twitter:SecretString:access_token_secret}}'
+          BEARER_TOKEN: '{{resolve:secretsmanager:fj_app/twitter:SecretString:bearer_token}}'
+
+  ScrapingsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: ContentsName
+          AttributeType: S
+      KeySchema:
+        - AttributeName: ContentsName
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1
+      TableName: !Ref ScrapingTableName
+
+  NotificationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/notify_fn
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Architectures:
+        - x86_64
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ScrapingsTable
+        - SNSPublishMessagePolicy:
+            TopicName: 'NotifyScraping'
+      Environment:
+        Variables:
+          DYNAMODB_SCRAPING_TABLE: !Ref ScrapingTableName
+          REGION_NAME: !Ref Region
+          NOTIFICATION_EMAIL: !Ref EMAIL
+          SNS_TOPIC_ARN: !Ref NotifyTopic
+
+  NotifyTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: 'NotifyScraping'
+      Subscription:
+        - Endpoint: !Ref EMAIL
+          Protocol: email
+
+  PutQueueFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/put_queue_fn
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Timeout: 15
+      Architectures:
+        - x86_64
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ScrapingsTable
+        # queueへの送信権限
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt SendQueue.QueueName
+        - Statement:
+            - Sid: SQSGetUrlPolicy
+              Effect: Allow
+              Action:
+                - sqs:GetQueueUrl
+              Resource: !GetAtt SendQueue.Arn
+      Environment:
+        Variables:
+          DYNAMODB_SCRAPING_TABLE: !Ref ScrapingTableName
+          REGION_NAME: !Ref Region
+          QUEUE_URL: !Ref SendQueue
+
+  SendQueue:
+    Type: AWS::SQS::Queue
+
+  ArticlesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: UserID
+          AttributeType: S
+        - AttributeName: ArticleID
+          AttributeType: S
+      KeySchema:
+        - AttributeName: UserID
+          KeyType: HASH
+        - AttributeName: ArticleID
+          KeyType: RANGE
+      ProvisionedThroughput:
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1
+      TableName: !Ref ArticleTableName
+
+  SyncArticleFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/sync_fn
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Architectures:
+        - x86_64
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ArticlesTable
+      Environment:
+        Variables:
+          DYNAMODB_ARTICLE_TABLE: !Ref ArticleTableName
+          REGION_NAME: !Ref Region
+      Events:
+        SyncArticlesTableEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt SendQueue.Arn
+            BatchSize: 4
+Outputs:
+  SendQueueArn:
+    Value: !GetAtt SendQueue.Arn
+  NotifyTopicArn:
+    Value: !Ref NotifyTopic
+# StockTradingStateMachineArn:
+#   Description: 'Stock Trading State machine ARN'
+#   Value: !Ref StockTradingStateMachine
+# StockTradingStateMachineRoleArn:
+#   Description: 'IAM Role created for Stock Trading State machine based on the specified SAM Policy Templates'
+#   Value: !GetAtt StockTradingStateMachineRole.Arn
