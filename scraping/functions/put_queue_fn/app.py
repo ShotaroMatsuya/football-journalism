@@ -1,21 +1,22 @@
-import boto3
-import os
-import json
 import decimal
+import json
+import os
 from time import sleep
 
+import boto3
 from botocore.exceptions import ClientError
 
 # dynamo
-DYNAMO = boto3.resource("dynamodb")
-DYNAMO_CLIENT = DYNAMO.meta.client
-DYNAMO_TABLE_NAME = os.getenv("TABLE_NAME", "Scraping")
-TABLE = DYNAMO.Table(DYNAMO_TABLE_NAME)
+table_name = os.environ.get("DYNAMODB_SCRAPING_TABLE", "Scrapings")
+region = os.environ.get("REGION_NAME", "ap-northeast-1")
+
+scraping_table = boto3.resource("dynamodb", region_name=region).Table(table_name)
+
 
 # SQS
 SQS = boto3.resource("sqs")
 QUEUE = SQS.Queue("url")
-URL = "https://sqs.ap-northeast-1.amazonaws.com/528163014577/ScrapingToArticle"
+URL = os.environ["QUEUE_URL"]
 
 
 class DecimalEncoder(json.JSONEncoder):
@@ -36,7 +37,7 @@ def get_item(key):
     """DynamoDBからitemを取得する."""
     print("DynamoDBからitemを取得する.")
     try:
-        response = TABLE.get_item(Key={"ContentsName": str(key)})
+        response = scraping_table.get_item(Key={"ContentsName": str(key)})
         encode = json.dumps(response["Item"], cls=DecimalEncoder, ensure_ascii=False)
         return encode
     except ClientError as e:
@@ -60,20 +61,13 @@ def key_list(filename):
         return f.read().split()
 
 
-def main():
+def lambda_handler(event, context):
     """main."""
     try:
-        filelist = ["get_key_list.txt"]
-        for f in filelist:
-            # for i in key_list(f):
-            for i in ["whoscored", "fabrizioromano", "sofascoreint", "shotaro59432703"]:
-                result = get_item(i)
-                put_sqs(result)
-                # 1秒スリープ処理
-                sleep(1)
+        for i in ["whoscored", "fabrizioromano", "sofascoreint", "shotaro59432703"]:
+            result = get_item(i)
+            put_sqs(result)
+            # 1秒スリープ処理
+            sleep(1)
     except Exception as e:
         raise e
-
-
-if __name__ == "__main__":
-    main()

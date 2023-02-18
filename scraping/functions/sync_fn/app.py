@@ -1,27 +1,28 @@
-import boto3
-import os
 import ast
 import json
+import os
+
+import boto3
 from boto3.dynamodb.conditions import Key
 
 # dynamo
-DYNAMO = boto3.resource("dynamodb")
-DYNAMO_CLIENT = DYNAMO.meta.client
-DYNAMO_TABLE_NAME = os.getenv("TABLE_NAME", "Article")
-TABLE = DYNAMO.Table(DYNAMO_TABLE_NAME)
+table_name = os.environ.get("DYNAMODB_ARTICLE_TABLE", "Articles")
+region = os.environ.get("REGION_NAME", "ap-northeast-1")
+
+article_table = boto3.resource("dynamodb", region_name=region).Table(table_name)
 
 
 def clean_table(UserID):
     """コピー先のDynamoDBテーブルをcleanUpする."""
     print("コピー先のDynamoDBテーブルをcleanUpする.")
-    getCleanTable = TABLE.query(KeyConditionExpression=Key("UserID").eq(UserID))
+    getCleanTable = article_table.query(KeyConditionExpression=Key("UserID").eq(UserID))
     print(getCleanTable)
 
     for i in getCleanTable["Items"]:
         print(i)
-        boto3.client("dynamodb").batch_write_item(
+        cleanupTable = boto3.client("dynamodb").batch_write_item(
             RequestItems={
-                "Article": [
+                "Articles": [
                     {
                         "DeleteRequest": {
                             "Key": {
@@ -41,7 +42,6 @@ def put_dynamo(data):
     UserName = data["ContentsName"]
     contents_list = json.loads(data["Contents"])
     UserID = str(contents_list[0]["authorId"])
-    print(UserID)
     AccountName = data["URL"]
     clean_table(UserID)
     try:
@@ -50,10 +50,12 @@ def put_dynamo(data):
                 "ArticleID": str(contents_list[i]["tweetId"]),
                 "UserID": str(contents_list[i]["authorId"]),
                 "AccountName": AccountName,
-                "Detail": contents_list[i]["body"],
+                "Detail": repr(contents_list[i]["body"]),
                 "UserName": UserName,
+                "ImgPath": str(contents_list[i]["imgPath"]),
+                "CreatedAt": contents_list[i]["createdAt"],
             }
-            TABLE.put_item(Item=Content)
+            article_table.put_item(Item=Content)
 
     except Exception as error:
         raise error
@@ -71,7 +73,6 @@ def lambda_handler(event, context):
     print("main.")
     try:
         for i in range(len(event["Records"])):
-            print(event["Records"][i - 1]["body"])
             getdata = event["Records"][i - 1]["body"]
             put_dynamo(conv_dict(getdata))
     except Exception as error:
