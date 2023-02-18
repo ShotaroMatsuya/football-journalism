@@ -4,8 +4,10 @@ import os
 from time import sleep
 
 import boto3
+from aws_xray_sdk.core import patch_all
 from botocore.exceptions import ClientError
 
+patch_all()
 # dynamo
 table_name = os.environ.get("DYNAMODB_SCRAPING_TABLE", "Scrapings")
 region = os.environ.get("REGION_NAME", "ap-northeast-1")

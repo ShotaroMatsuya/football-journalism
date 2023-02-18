@@ -4,7 +4,9 @@ import os
 
 import boto3
 import tweepy
+from aws_xray_sdk.core import patch_all
 
+patch_all()
 table_name = os.environ.get("DYNAMODB_SCRAPING_TABLE", "Scrapings")
 region = os.environ.get("REGION_NAME", "ap-northeast-1")
 

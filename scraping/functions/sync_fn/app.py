@@ -3,8 +3,10 @@ import json
 import os
 
 import boto3
+from aws_xray_sdk.core import patch_all
 from boto3.dynamodb.conditions import Key
 
+patch_all()
 # dynamo
 table_name = os.environ.get("DYNAMODB_ARTICLE_TABLE", "Articles")
 region = os.environ.get("REGION_NAME", "ap-northeast-1")
