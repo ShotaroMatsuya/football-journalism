@@ -9,15 +9,45 @@ Description: >
 Globals:
   Function:
     Timeout: 3
+    MemorySize: 128
+    Architectures:
+      - x86_64
+    Tracing: Active
 
 Parameters:
   FirebaseProjectId:
     Type: String
+  ArticlesTableName:
+    Type: String
+    Default: Articles
+  JournalistsTableName:
+    Type: String
+    Default: Journalists
+  RequestsTableName:
+    Type: String
+    Default: Requests
+  Region:
+    Type: String
+    Default: ap-northeast-1
 
 Resources:
   AuthGatewayHttpApi:
     Type: AWS::Serverless::HttpApi
     Properties:
+      DefinitionBody:
+        openapi: 3.0.1
+        info:
+          title: !Ref 'AWS::StackName'
+        paths: {}
+      CorsConfiguration:
+        AllowOrigins:
+          - '*'
+        AllowCredentials: false
+        AllowMethods:
+          - '*'
+        AllowHeaders:
+          - '*'
+        MaxAge: 180
       Auth:
         Authorizers:
           FirebaseAuthorizer:
@@ -33,8 +63,6 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       PackageType: Image
-      Architectures:
-        - x86_64
       Events:
         Gateway:
           Type: HttpApi
@@ -47,7 +75,157 @@ Resources:
       DockerContext: ./hello-world
       Dockerfile: Dockerfile
 
+  RequestsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: JournalistID
+          AttributeType: S
+        - AttributeName: UserID
+          AttributeType: S
+      KeySchema:
+        - AttributeName: JournalistID
+          KeyType: HASH
+        - AttributeName: UserID
+          KeyType: RANGE
+      ProvisionedThroughput:
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1
+      TableName: !Ref RequestsTableName
+
+  JournalistsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: UserID
+          AttributeType: S
+      KeySchema:
+        - AttributeName: UserID
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1
+      TableName: !Ref JournalistsTableName
+
+  GetRequestFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: nodejs16.x
+      CodeUri: handler/
+      Handler: getRequest.getRequestByJournalistId
+      Policies:
+        - AWSXRayDaemonWriteAccess
+        - DynamoDBCrudPolicy:
+            TableName: !Ref RequestsTable
+      Events:
+        GetRequest:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref AuthGatewayHttpApi
+            Path: /requests/{journalistId}
+            Method: get
+
+  CreateRequestFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: nodejs16.x
+      CodeUri: handler/
+      Handler: updateRequest.updateRequestByJournalistId
+      Policies:
+        - AWSXRayDaemonWriteAccess
+        - DynamoDBCrudPolicy:
+            TableName: !Ref RequestsTable
+      Events:
+        UpdateRequest:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref AuthGatewayHttpApi
+            Path: /requests/{journalistId}
+            Method: post
+            Auth:
+              Authorizer: NONE
+
+  UpdateJournalistFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: nodejs16.x
+      CodeUri: handler/
+      Handler: updateJournalist.updateJournalistByUserId
+      Policies:
+        - AWSXRayDaemonWriteAccess
+        - DynamoDBCrudPolicy:
+            TableName: !Ref JournalistsTable
+      Events:
+        UpdateJournalist:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref AuthGatewayHttpApi
+            Path: /journalist/{userId}
+            Method: put
+  GetJournalistsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: nodejs16.x
+      CodeUri: handler/
+      Handler: getJournalists.getJournalists
+      Policies:
+        - AWSXRayDaemonWriteAccess
+        - DynamoDBCrudPolicy:
+            TableName: !Ref JournalistsTable
+      Events:
+        GetJournalists:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref AuthGatewayHttpApi
+            Path: /journalist
+            Method: get
+            Auth:
+              Authorizer: NONE
+
+  UpdateArticleFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: nodejs16.x
+      CodeUri: handler/
+      Handler: updateArticle.updateArticleByJournalistId
+      Policies:
+        - AWSXRayDaemonWriteAccess
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ArticlesTableName
+      Events:
+        UpdateArticle:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref AuthGatewayHttpApi
+            Path: /articles/{journalistId}
+            Method: put
+
+  GetArticlesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: nodejs16.x
+      CodeUri: handler/
+      Handler: getArticles.getArticlesByJournalistId
+      Policies:
+        - AWSXRayDaemonWriteAccess
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ArticlesTableName
+      Events:
+        GetArticles:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref AuthGatewayHttpApi
+            Path: /articles/{journalistId}
+            Method: get
+            Auth:
+              Authorizer: NONE
+
 Outputs:
-  API:
+  APIUrl:
     Description: 'API Gateway endpoint URL for Prod stage'
     Value: !Sub 'https://${AuthGatewayHttpApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/'
+  APIId:
+    Description: 'API Gateway Id'
+    Value: !Ref AuthGatewayHttpApi
+    Export:
+      Name: AuthGatewayHttpApiId
