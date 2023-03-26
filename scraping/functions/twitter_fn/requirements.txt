@@ -1,0 +1,2 @@
+tweepy
+aws-xray-sdk
