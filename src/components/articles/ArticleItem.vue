@@ -1,7 +1,7 @@
 <template>
   <li>
     <section>
-      <span>{{ article.articleId }}</span>
+      <span>投稿日:{{ new Date(article.createdAt).toLocaleString() }}</span>
       <div class="controls">
         <base-button mode="outline" @click="loadArticle(true)">
           <div v-if="!isLoading">Refresh</div>
@@ -11,8 +11,15 @@
         </base-button>
       </div>
     </section>
-    <p>{{ article.articleBody }}</p>
-
+    <strong
+      style="white-space: pre-wrap; word-wrap: break-word"
+      v-html="convertToLink"
+    ></strong>
+    <section v-if="hasImages" class="image-container">
+      <div v-for="(img, i) in this.article.imagePath" :key="i">
+        <img :src="img" />
+      </div>
+    </section>
     <div class="actions">
       <base-button v-if="!isPrepared" @click="requestTranslation">
         自動翻訳する
@@ -39,6 +46,14 @@ export default {
     journalistId() {
       return this.$route.params.id;
     },
+    convertToLink() {
+      return this.convertNewLineChars(
+        this.textToLink(this.article.articleBody)
+      );
+    },
+    hasImages() {
+      return this.article.imagePath.length > 0;
+    },
   },
   created() {
     this.loadArticle();
@@ -63,6 +78,15 @@ export default {
     },
     handleError() {
       this.error = null;
+    },
+    textToLink(target) {
+      // 正規表現でURLを抽出
+      const regexp_url = /(https?:\/\/[\w/:%#$&?()~.=+-]+)/g;
+      let linkedComment = target.replace(regexp_url, '<br><a href="$1">$1</a>');
+      return linkedComment;
+    },
+    convertNewLineChars(target) {
+      return target.replace(/\\n/g, '<br>');
     },
   },
 };
@@ -98,5 +122,12 @@ div {
 .actions {
   display: flex;
   justify-content: flex-end;
+}
+.image-container {
+  display: flex;
+  flex-flow: column;
+}
+.image-container img {
+  width: 100%;
 }
 </style>

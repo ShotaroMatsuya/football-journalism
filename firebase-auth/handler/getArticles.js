@@ -31,6 +31,8 @@ async function main(event) {
           res.username = data.UserName.S;
           res.articleBody = data.Detail.S;
           res.articleId = data.ArticleID.S;
+          res.createdAt = data.CreatedAt.S;
+          res.imagePath = data.ImgPath.S;
           results.push(res);
         }
         return {
