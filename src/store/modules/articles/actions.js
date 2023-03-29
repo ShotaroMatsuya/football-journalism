@@ -27,7 +27,11 @@ export default {
       const article = {
         accountName: res.accountName,
         username: res.username,
-        articleBody: res.articleBody,
+        articleBody: unescapeHtml(
+          removeBackSlash(
+            removeDuplicateDoubleQuotes(removeSingleQuotes(res.articleBody))
+          )
+        ),
         articleId: res.articleId,
       };
       articles.push(article);
@@ -62,4 +66,35 @@ export default {
     }
     context.commit('postArticle', { [userId]: newArticles });
   },
+};
+
+const unescapeHtml = (target) => {
+  if (typeof target !== 'string') return target;
+
+  const patterns = {
+    '&lt;': '<',
+    '&gt;': '>',
+    '&amp;': '&',
+    '&quot;': '"',
+    '&#x27;': "'",
+    '&#x60;': '`',
+  };
+  return target.replace(/&(lt|gt|amp|quot|#x27|#x60);/g, (match) => {
+    return patterns[match];
+  });
+};
+
+const removeSingleQuotes = (target) => {
+  if (typeof target !== 'string') return target;
+  return target.replace(/^'(.*)'$/, '$1');
+};
+
+const removeBackSlash = (target) => {
+  const combined = target.split("\\'").join("'");
+  return combined;
+};
+
+const removeDuplicateDoubleQuotes = (target) => {
+  if (typeof target !== 'string') return target;
+  return target.replace(/^"(.*)"$/, '$1');
 };
