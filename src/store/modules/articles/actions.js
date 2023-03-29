@@ -33,6 +33,8 @@ export default {
           )
         ),
         articleId: res.articleId,
+        createdAt: res.createdAt,
+        imagePath: JSON.parse(res.imagePath.replace(/'/g, '"')),
       };
       articles.push(article);
     }
@@ -47,7 +49,8 @@ export default {
       username: data.username,
       accountName: data.accountName,
       articleBody: data.articleBody.val,
-      articleId: new Date().toISOString(),
+      articleId: new Date().getUTCMilliseconds(),
+      createdAt: new Date().toLocaleString(),
     };
     const newArticles = [...oldArticles, articleData];
     const token = context.rootGetters.token;

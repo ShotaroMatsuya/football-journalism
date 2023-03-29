@@ -15,6 +15,11 @@
       style="white-space: pre-wrap; word-wrap: break-word"
       v-html="convertToLink"
     ></strong>
+    <section v-if="hasImages" class="image-container">
+      <div v-for="(img, i) in this.article.imagePath" :key="i">
+        <img :src="img" />
+      </div>
+    </section>
     <div class="actions">
       <base-button v-if="!isPrepared" @click="requestTranslation">
         自動翻訳する
@@ -45,6 +50,9 @@ export default {
       return this.convertNewLineChars(
         this.textToLink(this.article.articleBody)
       );
+    },
+    hasImages() {
+      return this.article.imagePath.length > 0;
     },
   },
   created() {
@@ -114,5 +122,12 @@ div {
 .actions {
   display: flex;
   justify-content: flex-end;
+}
+.image-container {
+  display: flex;
+  flex-flow: column;
+}
+.image-container img {
+  width: 100%;
 }
 </style>
