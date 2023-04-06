@@ -52,7 +52,7 @@ def put_dynamo(data):
                 "ArticleID": str(contents_list[i]["tweetId"]),
                 "UserID": str(contents_list[i]["authorId"]),
                 "AccountName": AccountName,
-                "Detail": repr(contents_list[i]["body"]),
+                "Detail": contents_list[i]["body"],
                 "UserName": UserName,
                 "ImgPath": set(contents_list[i]["imgPath"])
                 if len(contents_list[i]["imgPath"]) > 0
