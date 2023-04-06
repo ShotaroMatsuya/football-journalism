@@ -54,7 +54,9 @@ def put_dynamo(data):
                 "AccountName": AccountName,
                 "Detail": repr(contents_list[i]["body"]),
                 "UserName": UserName,
-                "ImgPath": str(contents_list[i]["imgPath"]),
+                "ImgPath": set(contents_list[i]["imgPath"])
+                if len(contents_list[i]["imgPath"]) > 0
+                else list([]),
                 "CreatedAt": contents_list[i]["createdAt"],
             }
             article_table.put_item(Item=Content)
