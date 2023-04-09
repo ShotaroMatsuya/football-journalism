@@ -1,0 +1,98 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  ai-backend
+
+  Sample SAM Template for ai-backend
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Tracing: Active
+  Api:
+    TracingEnabled: True
+
+Parameters:
+  ArticleTableName:
+    Type: String
+    Default: Articles
+  Region:
+    Type: String
+    Default: ap-northeast-1
+  S3BucketName:
+    Type: String
+    Default: smat710-polly-output
+
+Resources:
+  AIStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: statemachine/ai_process.asl.json
+      DefinitionSubstitutions:
+        ImageParserFunctionArn: !GetAtt ImageParserFunction.Arn
+        S3BucketName: !Ref S3BucketName
+        DDBTable: !Ref ArticleTableName
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /api
+            Method: post
+
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref ImageParserFunction
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ArticleTableName
+        - S3CrudPolicy:
+            BucketName: !Ref S3BucketName
+        - ComprehendBasicAccessPolicy: {}
+        - Statement:
+            - Sid: PollyPolicy
+              Effect: Allow
+              Action:
+                - polly:StartSpeechSynthesisTask
+                - polly:GetSpeechSynthesisTask
+              Resource: '*'
+        - Statement:
+            - Sid: TranslatePolicy
+              Effect: Allow
+              Action:
+                - translate:*
+              Resource: '*'
+
+  ImageParserFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/image_parser/
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Timeout: 30
+      Architectures:
+        - x86_64
+      Policies:
+        - CloudWatchLogsFullAccess
+        - AWSXRayDaemonWriteAccess
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ArticleTableName
+        - Statement:
+            - Sid: CelebrityRekognitionPolicy
+              Effect: Allow
+              Action:
+                - rekognition:RecognizeCelebrities
+              Resource: '*'
+      Environment:
+        Variables:
+          DYNAMODB_ARTICLES_TABLE: !Ref ArticleTableName
+          REGION_NAME: !Ref Region
+
+Outputs:
+  TodoApi:
+    Description: 'API Gateway endpoint URL for Prod stage for Todo function'
+    Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/api/'
+  AIStateMachineArn:
+    Description: 'Stock Trading State machine ARN'
+    Value: !Ref AIStateMachine
+  AIStateMachineRoleArn:
+    Description: 'IAM Role created for Stock Trading State machine based on the specified SAM Policy Templates'
+    Value: !GetAtt AIStateMachineRole.Arn
