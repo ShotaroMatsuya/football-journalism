@@ -1,0 +1,476 @@
+{
+  "Comment": "A description of my state machine",
+  "StartAt": "DynamoDB GetItem",
+  "States": {
+    "DynamoDB GetItem": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:dynamodb:getItem",
+      "Parameters": {
+        "TableName": "${DDBTable}",
+        "Key": {
+          "ArticleID": {
+            "S.$": "$.ArticleID"
+          },
+          "UserID": {
+            "S.$": "$.UserID"
+          }
+        }
+      },
+      "Next": "Choice"
+    },
+    "Choice": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.Item",
+          "IsPresent": true,
+          "Next": "Parallel"
+        }
+      ]
+    },
+    "Parallel": {
+      "Type": "Parallel",
+      "End": true,
+      "Branches": [
+        {
+          "StartAt": "BatchDetectDominantLanguage",
+          "States": {
+            "BatchDetectDominantLanguage": {
+              "Type": "Task",
+              "Parameters": {
+                "TextList.$": "States.Array($.Item.Detail.S)"
+              },
+              "Resource": "arn:aws:states:::aws-sdk:comprehend:batchDetectDominantLanguage",
+              "ResultPath": "$.result",
+              "Next": "Choice (1)"
+            },
+            "Choice (1)": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.result.ResultList[0].Languages[0].LanguageCode",
+                  "StringEquals": "en",
+                  "Next": "Parallel (1)"
+                },
+                {
+                  "Variable": "$.result.ResultList[0].Languages[0].LanguageCode",
+                  "StringEquals": "es",
+                  "Next": "Parallel (2)"
+                }
+              ],
+              "Default": "Pass"
+            },
+            "Pass": {
+              "Type": "Pass",
+              "End": true
+            },
+            "Parallel (1)": {
+              "Type": "Parallel",
+              "Branches": [
+                {
+                  "StartAt": "TranslateText en -> ja",
+                  "States": {
+                    "TranslateText en -> ja": {
+                      "Type": "Task",
+                      "Parameters": {
+                        "SourceLanguageCode": "en",
+                        "TargetLanguageCode": "ja",
+                        "Text.$": "$.Item.Detail.S"
+                      },
+                      "Resource": "arn:aws:states:::aws-sdk:translate:translateText",
+                      "ResultPath": "$.Result",
+                      "Next": "Parallel (3)"
+                    },
+                    "Parallel (3)": {
+                      "Type": "Parallel",
+                      "Branches": [
+                        {
+                          "StartAt": "DynamoDB UpdateItem",
+                          "States": {
+                            "DynamoDB UpdateItem": {
+                              "Type": "Task",
+                              "Resource": "arn:aws:states:::aws-sdk:dynamodb:updateItem",
+                              "Parameters": {
+                                "TableName": "${DDBTable}",
+                                "Key": {
+                                  "ArticleID": {
+                                    "S.$": "$.Item.ArticleID.S"
+                                  },
+                                  "UserID": {
+                                    "S.$": "$.Item.UserID.S"
+                                  }
+                                },
+                                "UpdateExpression": "SET JapaneseVersion = :JapaneseVersionRef",
+                                "ExpressionAttributeValues": {
+                                  ":JapaneseVersionRef": {
+                                    "S.$": "$.Result.TranslatedText"
+                                  }
+                                }
+                              },
+                              "Next": "Success (5)"
+                            },
+                            "Success (5)": {
+                              "Type": "Succeed"
+                            }
+                          }
+                        },
+                        {
+                          "StartAt": "StartSpeechSynthesisTask (2)",
+                          "States": {
+                            "StartSpeechSynthesisTask (2)": {
+                              "Type": "Task",
+                              "Parameters": {
+                                "OutputFormat": "mp3",
+                                "OutputS3BucketName": "${S3BucketName}",
+                                "Text.$": "$.Result.TranslatedText",
+                                "VoiceId": "Mizuki"
+                              },
+                              "Resource": "arn:aws:states:::aws-sdk:polly:startSpeechSynthesisTask",
+                              "Next": "GetSpeechSynthesisTask (2)",
+                              "ResultPath": "$.Result"
+                            },
+                            "GetSpeechSynthesisTask (2)": {
+                              "Type": "Task",
+                              "Parameters": {
+                                "TaskId.$": "$.Result.SynthesisTask.TaskId"
+                              },
+                              "Resource": "arn:aws:states:::aws-sdk:polly:getSpeechSynthesisTask",
+                              "Next": "Choice (4)",
+                              "ResultPath": "$.Result"
+                            },
+                            "Choice (4)": {
+                              "Type": "Choice",
+                              "Choices": [
+                                {
+                                  "Variable": "$.Result.SynthesisTask.TaskStatus",
+                                  "StringMatches": "completed",
+                                  "Next": "DynamoDB UpdateItem (6)"
+                                }
+                              ],
+                              "Default": "Wait (2)"
+                            },
+                            "DynamoDB UpdateItem (6)": {
+                              "Type": "Task",
+                              "Resource": "arn:aws:states:::dynamodb:updateItem",
+                              "Parameters": {
+                                "TableName": "${DDBTable}",
+                                "Key": {
+                                  "ArticleID": {
+                                    "S.$": "$.Item.ArticleID.S"
+                                  },
+                                  "UserID": {
+                                    "S.$": "$.Item.UserID.S"
+                                  }
+                                },
+                                "UpdateExpression": "SET S3URL_ja = :S3URLRef",
+                                "ExpressionAttributeValues": {
+                                  ":S3URLRef": {
+                                    "S.$": "$.Result.SynthesisTask.OutputUri"
+                                  }
+                                }
+                              },
+                              "Next": "Success (4)"
+                            },
+                            "Success (4)": {
+                              "Type": "Succeed"
+                            },
+                            "Wait (2)": {
+                              "Type": "Wait",
+                              "Seconds": 5,
+                              "Next": "GetSpeechSynthesisTask (2)"
+                            }
+                          }
+                        }
+                      ],
+                      "End": true
+                    }
+                  }
+                },
+                {
+                  "StartAt": "DetectSentiment",
+                  "States": {
+                    "DetectSentiment": {
+                      "Type": "Task",
+                      "Parameters": {
+                        "LanguageCode": "en",
+                        "Text.$": "$.Item.Detail.S"
+                      },
+                      "Resource": "arn:aws:states:::aws-sdk:comprehend:detectSentiment",
+                      "ResultPath": "$.Result",
+                      "Next": "DynamoDB UpdateItem (4)"
+                    },
+                    "DynamoDB UpdateItem (4)": {
+                      "Type": "Task",
+                      "Resource": "arn:aws:states:::aws-sdk:dynamodb:updateItem",
+                      "Parameters": {
+                        "TableName": "${DDBTable}",
+                        "Key": {
+                          "ArticleID": {
+                            "S.$": "$.Item.ArticleID.S"
+                          },
+                          "UserID": {
+                            "S.$": "$.Item.UserID.S"
+                          }
+                        },
+                        "UpdateExpression": "SET Sentiment = :SentimentRef",
+                        "ExpressionAttributeValues": {
+                          ":SentimentRef": {
+                            "S.$": "$.Result.Sentiment"
+                          }
+                        }
+                      },
+                      "Next": "Success (3)"
+                    },
+                    "Success (3)": {
+                      "Type": "Succeed"
+                    }
+                  }
+                }
+              ],
+              "End": true
+            },
+            "Parallel (2)": {
+              "Type": "Parallel",
+              "End": true,
+              "Branches": [
+                {
+                  "StartAt": "TranslateText es -> ja",
+                  "States": {
+                    "TranslateText es -> ja": {
+                      "Type": "Task",
+                      "Parameters": {
+                        "SourceLanguageCode": "es",
+                        "TargetLanguageCode": "ja",
+                        "Text.$": "$.Item.Detail.S"
+                      },
+                      "Resource": "arn:aws:states:::aws-sdk:translate:translateText",
+                      "ResultPath": "$.Result",
+                      "Next": "Parallel (4)"
+                    },
+                    "Parallel (4)": {
+                      "Type": "Parallel",
+                      "End": true,
+                      "Branches": [
+                        {
+                          "StartAt": "DynamoDB UpdateItem (1)",
+                          "States": {
+                            "DynamoDB UpdateItem (1)": {
+                              "Type": "Task",
+                              "Resource": "arn:aws:states:::aws-sdk:dynamodb:updateItem",
+                              "Parameters": {
+                                "TableName": "${DDBTable}",
+                                "Key": {
+                                  "ArticleID": {
+                                    "S.$": "$.Item.ArticleID.S"
+                                  },
+                                  "UserID": {
+                                    "S.$": "$.Item.UserID.S"
+                                  }
+                                },
+                                "UpdateExpression": "SET JapaneseVersion = :JapaneseVersionRef",
+                                "ExpressionAttributeValues": {
+                                  ":JapaneseVersionRef": {
+                                    "S.$": "$.Result.TranslatedText"
+                                  }
+                                }
+                              },
+                              "Next": "Success (6)"
+                            },
+                            "Success (6)": {
+                              "Type": "Succeed"
+                            }
+                          }
+                        },
+                        {
+                          "StartAt": "StartSpeechSynthesisTask",
+                          "States": {
+                            "StartSpeechSynthesisTask": {
+                              "Type": "Task",
+                              "Parameters": {
+                                "OutputFormat": "mp3",
+                                "OutputS3BucketName": "${S3BucketName}",
+                                "Text.$": "$.Result.TranslatedText",
+                                "VoiceId": "Mizuki"
+                              },
+                              "Resource": "arn:aws:states:::aws-sdk:polly:startSpeechSynthesisTask",
+                              "Next": "GetSpeechSynthesisTask",
+                              "ResultPath": "$.Result"
+                            },
+                            "GetSpeechSynthesisTask": {
+                              "Type": "Task",
+                              "Parameters": {
+                                "TaskId.$": "$.Result.SynthesisTask.TaskId"
+                              },
+                              "Resource": "arn:aws:states:::aws-sdk:polly:getSpeechSynthesisTask",
+                              "Next": "Choice (2)",
+                              "ResultPath": "$.Result"
+                            },
+                            "Choice (2)": {
+                              "Type": "Choice",
+                              "Choices": [
+                                {
+                                  "Variable": "$.Result.SynthesisTask.TaskStatus",
+                                  "StringMatches": "completed",
+                                  "Next": "DynamoDB UpdateItem (2)"
+                                }
+                              ],
+                              "Default": "Wait"
+                            },
+                            "DynamoDB UpdateItem (2)": {
+                              "Type": "Task",
+                              "Resource": "arn:aws:states:::dynamodb:updateItem",
+                              "Parameters": {
+                                "TableName": "${DDBTable}",
+                                "Key": {
+                                  "ArticleID": {
+                                    "S.$": "$.Item.ArticleID.S"
+                                  },
+                                  "UserID": {
+                                    "S.$": "$.Item.UserID.S"
+                                  }
+                                },
+                                "UpdateExpression": "SET S3URL_ja = :S3URLRef",
+                                "ExpressionAttributeValues": {
+                                  ":S3URLRef": {
+                                    "S.$": "$.Result.SynthesisTask.OutputUri"
+                                  }
+                                }
+                              },
+                              "Next": "Success (2)"
+                            },
+                            "Success (2)": {
+                              "Type": "Succeed"
+                            },
+                            "Wait": {
+                              "Type": "Wait",
+                              "Seconds": 5,
+                              "Next": "GetSpeechSynthesisTask"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "StartAt": "DetectSentiment (1)",
+                  "States": {
+                    "DetectSentiment (1)": {
+                      "Type": "Task",
+                      "Parameters": {
+                        "LanguageCode": "es",
+                        "Text.$": "$.Item.Detail.S"
+                      },
+                      "Resource": "arn:aws:states:::aws-sdk:comprehend:detectSentiment",
+                      "Next": "DynamoDB UpdateItem (3)",
+                      "ResultPath": "$.Result"
+                    },
+                    "DynamoDB UpdateItem (3)": {
+                      "Type": "Task",
+                      "Resource": "arn:aws:states:::aws-sdk:dynamodb:updateItem",
+                      "Parameters": {
+                        "TableName": "${DDBTable}",
+                        "Key": {
+                          "ArticleID": {
+                            "S.$": "$.Item.ArticleID.S"
+                          },
+                          "UserID": {
+                            "S.$": "$.Item.UserID.S"
+                          }
+                        },
+                        "UpdateExpression": "SET Sentiment = :SentimentRef",
+                        "ExpressionAttributeValues": {
+                          ":SentimentRef": {
+                            "S.$": "$.Result.Sentiment"
+                          }
+                        }
+                      },
+                      "Next": "Success (7)"
+                    },
+                    "Success (7)": {
+                      "Type": "Succeed"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        {
+          "StartAt": "Choice (6)",
+          "States": {
+            "Choice (6)": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.Item.ImgPath",
+                  "IsPresent": true,
+                  "Next": "Map"
+                }
+              ],
+              "Default": "Success"
+            },
+            "Map": {
+              "Type": "Map",
+              "ItemProcessor": {
+                "ProcessorConfig": {
+                  "Mode": "INLINE"
+                },
+                "StartAt": "Lambda Invoke",
+                "States": {
+                  "Lambda Invoke": {
+                    "Type": "Task",
+                    "Resource": "arn:aws:states:::lambda:invoke",
+                    "OutputPath": "$.Payload",
+                    "Parameters": {
+                      "Payload.$": "$",
+                      "FunctionName": "${ImageParserFunctionArn}"
+                    },
+                    "Retry": [
+                      {
+                        "ErrorEquals": [
+                          "Lambda.ServiceException",
+                          "Lambda.AWSLambdaException",
+                          "Lambda.SdkClientException",
+                          "Lambda.TooManyRequestsException"
+                        ],
+                        "IntervalSeconds": 2,
+                        "MaxAttempts": 6,
+                        "BackoffRate": 2
+                      }
+                    ],
+                    "Catch": [
+                      {
+                        "ErrorEquals": ["States.ALL"],
+                        "Next": "Fail (3)"
+                      }
+                    ],
+                    "Next": "Success (1)"
+                  },
+                  "Success (1)": {
+                    "Type": "Succeed"
+                  },
+                  "Fail (3)": {
+                    "Type": "Fail"
+                  }
+                }
+              },
+              "ItemsPath": "$.Item.ImgPath.Ss",
+              "ResultPath": "$.Result",
+              "MaxConcurrency": 3,
+              "ItemSelector": {
+                "url.$": "$$.Map.Item.Value",
+                "ArticleID.$": "$.Item.ArticleID.S",
+                "UserID.$": "$.Item.UserID.S"
+              },
+              "End": true
+            },
+            "Success": {
+              "Type": "Succeed"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
