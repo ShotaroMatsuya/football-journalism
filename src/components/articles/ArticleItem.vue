@@ -63,6 +63,26 @@
         <img :src="img" />
       </div>
     </section>
+    <div>
+      <p>Pollyによる音声出力</p>
+      <audio
+        ref="audioPlayer"
+        :src="article.pollyOutput"
+        @timeupdate="updateTime"
+      ></audio>
+      <input
+        type="range"
+        min="0"
+        :max="duration"
+        v-model="currentTime"
+        @input="seek"
+      />
+      <p>
+        再生時間: {{ formatTime(currentTime) }} / {{ formatTime(duration) }}
+      </p>
+      <button @click="play">再生</button>
+      <button @click="pause">停止</button>
+    </div>
     <div class="actions" v-if="hasJapaneseText">
       <base-button v-if="isOriginal" @click="changeText">
         日本語テキストに切り替える
@@ -82,6 +102,8 @@ export default {
       selectedJournalist: null,
       isOriginal: true,
       body: '',
+      currentTime: 0,
+      duration: 0,
     };
   },
   computed: {
@@ -137,6 +159,24 @@ export default {
     );
   },
   methods: {
+    play() {
+      this.$refs.audioPlayer.play();
+    },
+    pause() {
+      this.$refs.audioPlayer.pause();
+    },
+    updateTime() {
+      this.currentTime = this.$refs.audioPlayer.currentTime;
+      this.duration = this.$refs.audioPlayer.duration;
+    },
+    seek() {
+      this.$refs.audioPlayer.currentTime = this.currentTime;
+    },
+    formatTime(time) {
+      const minutes = Math.floor(time / 60);
+      const seconds = Math.floor(time % 60);
+      return `${minutes}:${seconds < 10 ? '0' + seconds : seconds}`;
+    },
     async requestAIJob(refresh = false) {
       if (this.isLoading) return;
       this.isLoading = true;
