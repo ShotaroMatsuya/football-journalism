@@ -5,7 +5,7 @@ export default {
   setJournalists(state, payload) {
     state.journalists = payload;
   },
-  setFetchTimestamp(state) {
+  setFetchTimestampInJournalist(state) {
     state.lastFetch = new Date().getTime();
   },
 };

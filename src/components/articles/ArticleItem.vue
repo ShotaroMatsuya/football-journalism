@@ -59,19 +59,46 @@ export default {
     this.loadArticle();
   },
   methods: {
-    async loadArticle(refresh = false) {
+    async requestAIJob(refresh = false) {
       this.isLoading = true;
       try {
-        await this.$store.dispatch('articles/loadArticles', {
-          forceRefresh: refresh,
+        // JOBをリクエスト
+        if (this.isDone) {
+          console.log('実行済み');
+          return;
+        }
+        await this.$store.dispatch('articles/triggerAI', {
+          articleId: this.article.articleId,
           journalistId: this.journalistId,
+          forceRefresh: refresh,
+          isDone: this.isDone,
+          lastFetch: this.article.lastFetch ? this.article.lastFetch : 0,
         });
-        this.selectedJournalist = this.$store.getters['articles/journalistId'];
+        await this.checkStatus();
+        // jobが完了したらarticlesを再度get
+        await this.updateArticle();
+        console.log(this.article);
       } catch (error) {
         this.error = error.message || 'Something went wrong!';
+      } finally {
+        this.isLoading = false;
       }
-
-      this.isLoading = false;
+    },
+    async checkStatus() {
+      return await this.$store.dispatch('articles/getStatus', {
+        jobId: this.article.jobId,
+        articleId: this.article.articleId,
+        journalistId: this.journalistId,
+      });
+    },
+    async updateArticle() {
+      return await this.$store.dispatch('articles/updateArticle', {
+        articleId: this.article.articleId,
+        isDone: this.isDone,
+        lastFetch: this.article.lastFetch ? this.article.lastFetch : 0,
+        journalistId: this.journalistId,
+      });
+    },
     },
     async requestTranslation() {
       this.isPrepared = !this.isPrepared;

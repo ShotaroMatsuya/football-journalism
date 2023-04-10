@@ -58,6 +58,6 @@ export default {
       journalists.push(journalist);
     }
     context.commit('setJournalists', journalists);
-    context.commit('setFetchTimestamp');
+    context.commit('setFetchTimestampInJournalist');
   },
 };
