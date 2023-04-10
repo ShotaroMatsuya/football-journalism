@@ -65,8 +65,20 @@ export default {
     hasSentiment() {
       return this.article.sentiment !== null;
     },
+    hasFaces() {
+      return this.article.faces.length > 0;
+    },
+    hasPollyOutput() {
+      return this.article.pollyOutput !== null;
+    },
     hasJapaneseText() {
       return this.article.japaneseVersion !== null;
+    },
+    hasKeyOrgs() {
+      return this.article.keyOrgs.length > 0;
+    },
+    hasKeyPersons() {
+      return this.article.keyPersons.length > 0;
     },
     isDone() {
       return this.article.isDone;

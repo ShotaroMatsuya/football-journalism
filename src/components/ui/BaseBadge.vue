@@ -43,4 +43,19 @@ export default {
   background-color: #55008d;
   color: white;
 }
+
+.orgs {
+  background-color: #8d6c00;
+  color: white;
+}
+
+.persons {
+  background-color: #7a8d00;
+  color: white;
+}
+
+.faces {
+  background-color: #8d0021;
+  color: white;
+}
 </style>
