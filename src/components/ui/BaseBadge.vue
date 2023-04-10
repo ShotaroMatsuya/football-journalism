@@ -45,16 +45,22 @@ export default {
 }
 
 .orgs {
+  margin: 1px;
+  border: 1px solid black;
   background-color: #8d6c00;
   color: white;
 }
 
 .persons {
+  margin: 1px;
+  border: 1px solid black;
   background-color: #7a8d00;
   color: white;
 }
 
 .faces {
+  margin: 1px;
+  border: 1px solid black;
   background-color: #8d0021;
   color: white;
 }

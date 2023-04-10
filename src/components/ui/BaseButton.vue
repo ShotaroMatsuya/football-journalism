@@ -69,11 +69,16 @@ button:active {
   border-color: #084100;
   color: white;
 }
+.disable:hover,
+.disable:active {
+  background-color: #084100;
+}
 
 .flat:hover,
 .flat:active,
 .outline:hover,
 .outline:active {
-  background-color: #edd2ff;
+  background-color: #6800ad;
+  color: white;
 }
 </style>
