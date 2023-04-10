@@ -1,25 +1,59 @@
 <template>
   <li>
-    <div class="tooltip">
-      <span v-if="hasSentiment" :class="sentimentFace" class="ec emoji"></span>
-      <div class="description">
-        {{ article.sentiment }}な文章と判定されました
+    <div class="controls">
+      <span>投稿日:{{ new Date(article.createdAt).toLocaleString() }}</span>
+      <div class="tooltip">
+        <span
+          v-if="hasSentiment"
+          :class="sentimentFace"
+          class="ec emoji"
+        ></span>
+        <div class="description">
+          AIにより {{ article.sentiment }}な文章と判定されました
+        </div>
       </div>
+      <base-button
+        :mode="isDone ? 'disable' : 'outline'"
+        @click="requestAIJob()"
+      >
+        <div v-if="!isLoading">{{ buttonText }}</div>
+        <div v-else class="spinner">
+          <base-spinner2></base-spinner2>
+        </div>
+      </base-button>
     </div>
     <section>
-      <span>投稿日:{{ new Date(article.createdAt).toLocaleString() }}</span>
-      <div class="controls">
-        <base-button
-          :mode="isDone ? 'disable' : 'outline'"
-          @click="requestAIJob()"
-        >
-          <div v-if="!isLoading">{{ buttonText }}</div>
-          <div v-else class="spinner">
-            <base-spinner2></base-spinner2>
-          </div>
-        </base-button>
+      <div class="tag-area">
+        <div class="org-tag" v-if="hasKeyOrgs">
+          テキストから解析されたクラブ：
+          <base-badge
+            v-for="(k, i) in article.keyOrgs"
+            type="orgs"
+            :key="i"
+            :title="k"
+          ></base-badge>
+        </div>
+        <div class="person-tag" v-if="hasKeyPersons">
+          テキストから解析された人物：
+          <base-badge
+            v-for="(k, i) in article.keyPersons"
+            :key="i"
+            :title="k"
+            type="persons"
+          ></base-badge>
+        </div>
+        <div class="face-tag" v-if="hasFaces">
+          画像から解析された人物：
+          <base-badge
+            v-for="(k, i) in article.faces"
+            :key="i"
+            :title="k"
+            type="faces"
+          ></base-badge>
+        </div>
       </div>
     </section>
+    <hr />
     <strong
       style="white-space: pre-wrap; word-wrap: break-word"
       v-html="convertToLink"
