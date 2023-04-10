@@ -14,9 +14,9 @@ export default {
     if (!lastFetch) {
       return true;
     } else {
-      // const currentTimeStamp = new Date().getTime();
-      // return (currentTimeStamp - lastFetch) / 1000 > 10; // more then 10 sec ago
-      return true;
+      const currentTimeStamp = new Date().getTime();
+      return (currentTimeStamp - lastFetch) / 1000 > 2; // more then 10 sec ago
+      // return true;
     }
   },
 };

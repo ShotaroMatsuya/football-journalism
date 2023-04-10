@@ -1,10 +1,19 @@
 <template>
   <li>
+    <div class="tooltip">
+      <span v-if="hasSentiment" :class="sentimentFace" class="ec emoji"></span>
+      <div class="description">
+        {{ article.sentiment }}な文章と判定されました
+      </div>
+    </div>
     <section>
       <span>投稿日:{{ new Date(article.createdAt).toLocaleString() }}</span>
       <div class="controls">
-        <base-button mode="outline" @click="loadArticle(true)">
-          <div v-if="!isLoading">Refresh</div>
+        <base-button
+          :mode="isDone ? 'disable' : 'outline'"
+          @click="requestAIJob(true)"
+        >
+          <div v-if="!isLoading">{{ buttonText }}</div>
           <div v-else class="spinner">
             <base-spinner2></base-spinner2>
           </div>
@@ -13,20 +22,18 @@
     </section>
     <strong
       style="white-space: pre-wrap; word-wrap: break-word"
-      v-html="convertToLink"
+      v-html="body"
     ></strong>
     <section v-if="hasImages" class="image-container">
       <div v-for="(img, i) in this.article.imagePath" :key="i">
         <img :src="img" />
       </div>
     </section>
-    <div class="actions">
-      <base-button v-if="!isPrepared" @click="requestTranslation">
-        自動翻訳する
+    <div class="actions" v-if="hasJapaneseText">
+      <base-button v-if="isOriginal" @click="changeText">
+        日本語テキストに切り替える
       </base-button>
-      <base-button v-else @click="requestTranslation"
-        >翻訳された音声を取得</base-button
-      >
+      <base-button v-else @click="reverseText">原文に戻す</base-button>
     </div>
   </li>
 </template>
@@ -39,7 +46,8 @@ export default {
       isLoading: false,
       error: null,
       selectedJournalist: null,
-      isPrepared: false,
+      isOriginal: true,
+      body: '',
     };
   },
   computed: {
@@ -54,27 +62,84 @@ export default {
     hasImages() {
       return this.article.imagePath.length > 0;
     },
+    hasSentiment() {
+      return this.article.sentiment !== null;
+    },
+    hasJapaneseText() {
+      return this.article.japaneseVersion !== null;
+    },
+    isDone() {
+      return this.article.isDone;
+    },
+    buttonText() {
+      return this.isDone ? 'リクエスト済' : 'AIリクエスト';
+    },
+    sentimentFace() {
+      switch (this.article.sentiment) {
+        case 'POSITIVE':
+          return 'ec-laughing';
+        case 'NEGATIVE':
+          return 'ec-sob';
+        case 'NEUTRAL':
+          return 'ec-slightly-frowning-face';
+        default:
+          return 'ec-exploding-head';
+      }
+    },
   },
-  created() {
-    this.loadArticle();
+  mounted() {
+    this.body = this.convertNewLineChars(
+      this.textToLink(this.article.articleBody)
+    );
   },
   methods: {
-    async loadArticle(refresh = false) {
+    async requestAIJob(refresh = false) {
       this.isLoading = true;
       try {
-        await this.$store.dispatch('articles/loadArticles', {
-          forceRefresh: refresh,
+        // JOBをリクエスト
+        if (this.isDone) {
+          console.log('実行済み');
+          return;
+        }
+        await this.$store.dispatch('articles/triggerAI', {
+          articleId: this.article.articleId,
           journalistId: this.journalistId,
+          forceRefresh: refresh,
+          isDone: this.isDone,
+          lastFetch: this.article.lastFetch ? this.article.lastFetch : 0,
         });
-        this.selectedJournalist = this.$store.getters['articles/journalistId'];
+        await this.checkStatus();
+        // jobが完了したらarticlesを再度get
+        await this.updateArticle();
+        console.log(this.article);
       } catch (error) {
         this.error = error.message || 'Something went wrong!';
+      } finally {
+        this.isLoading = false;
       }
-
-      this.isLoading = false;
     },
-    async requestTranslation() {
-      this.isPrepared = !this.isPrepared;
+    async checkStatus() {
+      return await this.$store.dispatch('articles/getStatus', {
+        jobId: this.article.jobId,
+        articleId: this.article.articleId,
+        journalistId: this.journalistId,
+      });
+    },
+    async updateArticle() {
+      return await this.$store.dispatch('articles/updateArticle', {
+        articleId: this.article.articleId,
+        isDone: this.isDone,
+        lastFetch: this.article.lastFetch ? this.article.lastFetch : 0,
+        journalistId: this.journalistId,
+      });
+    },
+    changeText() {
+      this.isOriginal = !this.isOriginal;
+      this.body = this.article.japaneseVersion;
+    },
+    reverseText() {
+      this.isOriginal = !this.isOriginal;
+      this.body = this.article.articleBody;
     },
     handleError() {
       this.error = null;
@@ -98,6 +163,7 @@ li {
   border: 1px solid #424242;
   border-radius: 12px;
   padding: 1rem;
+  position: relative;
 }
 section {
   display: flex;
@@ -129,5 +195,45 @@ div {
 }
 .image-container img {
   width: 100%;
+}
+.emoji {
+  position: absolute;
+  top: 5px;
+  left: 320px;
+  font-size: 69px;
+}
+.tooltip {
+  position: relative;
+  cursor: pointer;
+  display: inline-block;
+}
+.tooltip p {
+  margin: 0;
+  padding: 0;
+}
+.description {
+  display: none;
+  position: absolute;
+  padding: 10px;
+  font-size: 12px;
+  line-height: 1.6em;
+  color: #fff;
+  border-radius: 5px;
+  background: #000;
+  width: 100px;
+}
+.description:before {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  border: 15px solid transparent;
+  border-top: 15px solid #000;
+  margin-left: -15px;
+}
+.tooltip:hover .description {
+  display: inline-block;
+  top: -105px;
+  left: 307px;
 }
 </style>

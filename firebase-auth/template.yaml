@@ -220,6 +220,25 @@ Resources:
             Auth:
               Authorizer: NONE
 
+  GetArticleFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: nodejs16.x
+      CodeUri: handler/
+      Handler: getArticle.getArticleByArticleId
+      Policies:
+        - AWSXRayDaemonWriteAccess
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ArticlesTableName
+      Events:
+        GetArticles:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref AuthGatewayHttpApi
+            Path: /article/{journalistId}/{articleId}
+            Method: get
+            Auth:
+              Authorizer: NONE
 Outputs:
   APIUrl:
     Description: 'API Gateway endpoint URL for Prod stage'

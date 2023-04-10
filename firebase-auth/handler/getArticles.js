@@ -32,7 +32,15 @@ async function main(event) {
           res.articleBody = data.Detail.S;
           res.articleId = data.ArticleID.S;
           res.createdAt = data.CreatedAt.S;
-          res.imagePath = data.ImgPath.SS;
+          res.imagePath = data.ImgPath ? data.ImgPath.SS : [];
+          res.pollyOutput = data.S3URL_ja ? data.S3URL_ja.S : null;
+          res.japaneseVersion = data.JapaneseVersion
+            ? data.JapaneseVersion.S
+            : null;
+          res.sentiment = data.Sentiment ? data.Sentiment.S : null;
+          res.faces = data.Faces ? data.Faces.SS : [];
+          res.keyOrgs = data.KeyOrgs ? data.KeyOrgs.SS : [];
+          res.keyPersons = data.KeyPersons ? data.keyPersons.SS : [];
           results.push(res);
         }
         return {

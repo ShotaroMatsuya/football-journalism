@@ -225,6 +225,101 @@
                       "Type": "Succeed"
                     }
                   }
+                },
+                {
+                  "StartAt": "DetectEntities",
+                  "States": {
+                    "DetectEntities": {
+                      "Type": "Task",
+                      "Parameters": {
+                        "LanguageCode": "en",
+                        "Text.$": "$.Item.Detail.S"
+                      },
+                      "Resource": "arn:aws:states:::aws-sdk:comprehend:detectEntities",
+                      "Next": "Choice (3)",
+                      "ResultPath": "$.Result",
+                      "ResultSelector": {
+                        "Orgs": {
+                          "Value.$": "States.ArrayUnique($.Entities[?(@.Type == 'ORGANIZATION')].Text)",
+                          "Count.$": "States.ArrayLength($.Entities[?(@.Type == 'ORGANIZATION')].Text)"
+                        },
+                        "People": {
+                          "Count.$": "States.ArrayLength($.Entities[?(@.Type == 'PERSON')].Text)",
+                          "Value.$": "States.ArrayUnique($.Entities[?(@.Type == 'PERSON')].Text)"
+                        }
+                      }
+                    },
+                    "Choice (3)": {
+                      "Type": "Choice",
+                      "Choices": [
+                        {
+                          "Variable": "$.Result.People.Count",
+                          "NumericGreaterThan": 0,
+                          "Next": "DynamoDB UpdateItem (8)"
+                        }
+                      ],
+                      "Default": "Choice (5)"
+                    },
+                    "DynamoDB UpdateItem (8)": {
+                      "Type": "Task",
+                      "Resource": "arn:aws:states:::aws-sdk:dynamodb:updateItem",
+                      "Parameters": {
+                        "TableName": "Articles",
+                        "Key": {
+                          "ArticleID": {
+                            "S.$": "$.Item.ArticleID.S"
+                          },
+                          "UserID": {
+                            "S.$": "$.Item.UserID.S"
+                          }
+                        },
+                        "UpdateExpression": "SET KeyPerson = :KeyPeopleRef",
+                        "ExpressionAttributeValues": {
+                          ":KeyPeopleRef": {
+                            "Ss.$": "$.Result.People.Value"
+                          }
+                        }
+                      },
+                      "Next": "Choice (5)",
+                      "ResultPath": "$.Output"
+                    },
+                    "Choice (5)": {
+                      "Type": "Choice",
+                      "Choices": [
+                        {
+                          "Variable": "$.Result.Orgs.Count",
+                          "NumericGreaterThan": 0,
+                          "Next": "DynamoDB UpdateItem (5)"
+                        }
+                      ],
+                      "Default": "Success (8)"
+                    },
+                    "DynamoDB UpdateItem (5)": {
+                      "Type": "Task",
+                      "Resource": "arn:aws:states:::aws-sdk:dynamodb:updateItem",
+                      "Parameters": {
+                        "TableName": "Articles",
+                        "Key": {
+                          "ArticleID": {
+                            "S.$": "$.Item.ArticleID.S"
+                          },
+                          "UserID": {
+                            "S.$": "$.Item.UserID.S"
+                          }
+                        },
+                        "UpdateExpression": "SET KeyOrgs = :KeyOrgsRef",
+                        "ExpressionAttributeValues": {
+                          ":KeyOrgsRef": {
+                            "Ss.$": "$.Result.Orgs.Value"
+                          }
+                        }
+                      },
+                      "End": true
+                    },
+                    "Success (8)": {
+                      "Type": "Succeed"
+                    }
+                  }
                 }
               ],
               "End": true
@@ -318,7 +413,7 @@
                             },
                             "DynamoDB UpdateItem (2)": {
                               "Type": "Task",
-                              "Resource": "arn:aws:states:::dynamodb:updateItem",
+                              "Resource": "arn:aws:states:::aws-sdk:dynamodb:updateItem",
                               "Parameters": {
                                 "TableName": "${DDBTable}",
                                 "Key": {
@@ -391,6 +486,101 @@
                       "Type": "Succeed"
                     }
                   }
+                },
+                {
+                  "StartAt": "DetectEntities (1)",
+                  "States": {
+                    "DetectEntities (1)": {
+                      "Type": "Task",
+                      "Parameters": {
+                        "LanguageCode": "es",
+                        "Text.$": "$.Item.Detail.S"
+                      },
+                      "Resource": "arn:aws:states:::aws-sdk:comprehend:detectEntities",
+                      "Next": "Choice (7)",
+                      "ResultSelector": {
+                        "Orgs": {
+                          "Value.$": "States.ArrayUnique($.Entities[?(@.Type == 'ORGANIZATION')].Text)",
+                          "Count.$": "States.ArrayLength($.Entities[?(@.Type == 'ORGANIZATION')].Text)"
+                        },
+                        "People": {
+                          "Count.$": "States.ArrayLength($.Entities[?(@.Type == 'PERSON')].Text)",
+                          "Value.$": "States.ArrayUnique($.Entities[?(@.Type == 'PERSON')].Text)"
+                        }
+                      },
+                      "ResultPath": "$.Result"
+                    },
+                    "Choice (7)": {
+                      "Type": "Choice",
+                      "Choices": [
+                        {
+                          "Variable": "$.Result.People.Count",
+                          "NumericGreaterThan": 0,
+                          "Next": "DynamoDB UpdateItem (7)"
+                        }
+                      ],
+                      "Default": "Choice (8)"
+                    },
+                    "DynamoDB UpdateItem (7)": {
+                      "Type": "Task",
+                      "Resource": "arn:aws:states:::aws-sdk:dynamodb:updateItem",
+                      "Parameters": {
+                        "TableName": "Articles",
+                        "Key": {
+                          "ArticleID": {
+                            "S.$": "$.Item.ArticleID.S"
+                          },
+                          "UserID": {
+                            "S.$": "$.Item.UserID.S"
+                          }
+                        },
+                        "UpdateExpression": "SET KeyPerson = :KeyPeopleRef",
+                        "ExpressionAttributeValues": {
+                          ":KeyPeopleRef": {
+                            "Ss.$": "$.Result.People.Value"
+                          }
+                        }
+                      },
+                      "ResultPath": "$.Output",
+                      "Next": "Choice (8)"
+                    },
+                    "Choice (8)": {
+                      "Type": "Choice",
+                      "Choices": [
+                        {
+                          "Variable": "$.Result.Orgs.Count",
+                          "NumericGreaterThan": 0,
+                          "Next": "DynamoDB UpdateItem (9)"
+                        }
+                      ],
+                      "Default": "Success (9)"
+                    },
+                    "DynamoDB UpdateItem (9)": {
+                      "Type": "Task",
+                      "Resource": "arn:aws:states:::aws-sdk:dynamodb:updateItem",
+                      "Parameters": {
+                        "TableName": "Articles",
+                        "Key": {
+                          "ArticleID": {
+                            "S.$": "$.Item.ArticleID.S"
+                          },
+                          "UserID": {
+                            "S.$": "$.Item.UserID.S"
+                          }
+                        },
+                        "UpdateExpression": "SET KeyOrgs = :KeyOrgsRef",
+                        "ExpressionAttributeValues": {
+                          ":KeyOrgsRef": {
+                            "Ss.$": "$.Result.Orgs.Value"
+                          }
+                        }
+                      },
+                      "End": true
+                    },
+                    "Success (9)": {
+                      "Type": "Succeed"
+                    }
+                  }
                 }
               ]
             }
@@ -403,8 +593,18 @@
               "Type": "Choice",
               "Choices": [
                 {
-                  "Variable": "$.Item.ImgPath",
-                  "IsPresent": true,
+                  "And": [
+                    {
+                      "Variable": "$.Item.ImgPath",
+                      "IsPresent": true
+                    },
+                    {
+                      "Not": {
+                        "Variable": "$.Item.ImgPath.L",
+                        "IsPresent": true
+                      }
+                    }
+                  ],
                   "Next": "Map"
                 }
               ],
