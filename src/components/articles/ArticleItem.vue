@@ -1,25 +1,59 @@
 <template>
   <li>
-    <div class="tooltip">
-      <span v-if="hasSentiment" :class="sentimentFace" class="ec emoji"></span>
-      <div class="description">
-        {{ article.sentiment }}な文章と判定されました
+    <div class="controls">
+      <span>投稿日:{{ new Date(article.createdAt).toLocaleString() }}</span>
+      <div class="tooltip">
+        <span
+          v-if="hasSentiment"
+          :class="sentimentFace"
+          class="ec emoji"
+        ></span>
+        <div class="description">
+          AIにより {{ article.sentiment }}な文章と判定されました
+        </div>
       </div>
+      <base-button
+        :mode="isDone ? 'disable' : 'outline'"
+        @click="requestAIJob()"
+      >
+        <div v-if="!isLoading">{{ buttonText }}</div>
+        <div v-else class="spinner">
+          <base-spinner2></base-spinner2>
+        </div>
+      </base-button>
     </div>
     <section>
-      <span>投稿日:{{ new Date(article.createdAt).toLocaleString() }}</span>
-      <div class="controls">
-        <base-button
-          :mode="isDone ? 'disable' : 'outline'"
-          @click="requestAIJob()"
-        >
-          <div v-if="!isLoading">{{ buttonText }}</div>
-          <div v-else class="spinner">
-            <base-spinner2></base-spinner2>
-          </div>
-        </base-button>
+      <div class="tag-area">
+        <div class="org-tag" v-if="hasKeyOrgs">
+          テキストから解析されたクラブ：
+          <base-badge
+            v-for="(k, i) in article.keyOrgs"
+            type="orgs"
+            :key="i"
+            :title="k"
+          ></base-badge>
+        </div>
+        <div class="person-tag" v-if="hasKeyPersons">
+          テキストから解析された人物：
+          <base-badge
+            v-for="(k, i) in article.keyPersons"
+            :key="i"
+            :title="k"
+            type="persons"
+          ></base-badge>
+        </div>
+        <div class="face-tag" v-if="hasFaces">
+          画像から解析された人物：
+          <base-badge
+            v-for="(k, i) in article.faces"
+            :key="i"
+            :title="k"
+            type="faces"
+          ></base-badge>
+        </div>
       </div>
     </section>
+    <hr />
     <strong
       style="white-space: pre-wrap; word-wrap: break-word"
       v-html="convertToLink"
@@ -29,6 +63,26 @@
         <img :src="img" />
       </div>
     </section>
+    <div>
+      <p>Pollyによる音声出力</p>
+      <audio
+        ref="audioPlayer"
+        :src="article.pollyOutput"
+        @timeupdate="updateTime"
+      ></audio>
+      <input
+        type="range"
+        min="0"
+        :max="duration"
+        v-model="currentTime"
+        @input="seek"
+      />
+      <p>
+        再生時間: {{ formatTime(currentTime) }} / {{ formatTime(duration) }}
+      </p>
+      <button @click="play">再生</button>
+      <button @click="pause">停止</button>
+    </div>
     <div class="actions" v-if="hasJapaneseText">
       <base-button v-if="isOriginal" @click="changeText">
         日本語テキストに切り替える
@@ -48,6 +102,8 @@ export default {
       selectedJournalist: null,
       isOriginal: true,
       body: '',
+      currentTime: 0,
+      duration: 0,
     };
   },
   computed: {
@@ -82,7 +138,7 @@ export default {
       return this.article.isDone;
     },
     buttonText() {
-      return this.isDone ? 'リクエスト済' : 'AIリクエスト';
+      return this.isDone ? '解析済' : 'AI解析';
     },
     sentimentFace() {
       switch (this.article.sentiment) {
@@ -103,6 +159,24 @@ export default {
     );
   },
   methods: {
+    play() {
+      this.$refs.audioPlayer.play();
+    },
+    pause() {
+      this.$refs.audioPlayer.pause();
+    },
+    updateTime() {
+      this.currentTime = this.$refs.audioPlayer.currentTime;
+      this.duration = this.$refs.audioPlayer.duration;
+    },
+    seek() {
+      this.$refs.audioPlayer.currentTime = this.currentTime;
+    },
+    formatTime(time) {
+      const minutes = Math.floor(time / 60);
+      const seconds = Math.floor(time % 60);
+      return `${minutes}:${seconds < 10 ? '0' + seconds : seconds}`;
+    },
     async requestAIJob(refresh = false) {
       if (this.isLoading) return;
       this.isLoading = true;
@@ -174,7 +248,6 @@ li {
   border: 1px solid #424242;
   border-radius: 12px;
   padding: 1rem;
-  position: relative;
 }
 section {
   display: flex;
@@ -208,10 +281,8 @@ div {
   width: 100%;
 }
 .emoji {
-  position: absolute;
-  top: 5px;
-  left: 320px;
-  font-size: 69px;
+  font-size: 50px;
+  margin-right: 10px;
 }
 .tooltip {
   position: relative;
@@ -244,7 +315,10 @@ div {
 }
 .tooltip:hover .description {
   display: inline-block;
-  top: -105px;
-  left: 307px;
+  top: -100px;
+  left: -25px;
+}
+.btn-image {
+  width: 60px;
 }
 </style>
