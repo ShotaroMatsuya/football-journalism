@@ -55,7 +55,7 @@
 
 <script>
 import ArticleItem from '../../components/articles/ArticleItem.vue';
-
+import { mapGetters } from 'vuex';
 export default {
   components: {
     ArticleItem,
@@ -71,6 +71,7 @@ export default {
     };
   },
   computed: {
+    ...mapGetters('articles', ['articles']),
     username() {
       if (this.selectedJournalist !== null) {
         return this.selectedJournalist.username;
