@@ -9,8 +9,14 @@ Description: >
 Globals:
   Function:
     Tracing: Active
+    Timeout: 3
   Api:
     TracingEnabled: True
+    Cors:
+      AllowOrigin: "'*'"
+      AllowCredentials: false
+      AllowMethods: "'*'"
+      AllowHeaders: "'*'"
 
 Parameters:
   ArticleTableName:
@@ -24,6 +30,40 @@ Parameters:
     Default: smat710-polly-output
 
 Resources:
+  AIRestApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      DefinitionBody:
+        Fn::Transform:
+          Name: AWS::Include
+          Parameters:
+            Location: s3://smat710-polly-output/swagger.yaml
+  GetStatusFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/get_status/
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Architectures:
+        - x86_64
+      Policies:
+        - CloudWatchLogsFullAccess
+        - AWSXRayDaemonWriteAccess
+        - Statement:
+            - Sid: SfnGetStatusPolicy
+              Effect: Allow
+              Action:
+                - states:DescribeExecution
+              Resource: '*'
+      Events:
+        GetStatus:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AIRestApi
+            Path: /api/status
+            Method: post
+
   AIStateMachine:
     Type: AWS::Serverless::StateMachine
     Properties:
@@ -38,6 +78,7 @@ Resources:
           Properties:
             Path: /api
             Method: post
+            RestApiId: !Ref AIRestApi
 
       Policies:
         - LambdaInvokePolicy:
@@ -87,9 +128,9 @@ Resources:
           REGION_NAME: !Ref Region
 
 Outputs:
-  TodoApi:
+  AIRestApiURL:
     Description: 'API Gateway endpoint URL for Prod stage for Todo function'
-    Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/api/'
+    Value: !Sub 'https://${AIRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/api/'
   AIStateMachineArn:
     Description: 'Stock Trading State machine ARN'
     Value: !Ref AIStateMachine
