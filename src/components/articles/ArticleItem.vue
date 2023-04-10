@@ -11,7 +11,7 @@
       <div class="controls">
         <base-button
           :mode="isDone ? 'disable' : 'outline'"
-          @click="requestAIJob(true)"
+          @click="requestAIJob()"
         >
           <div v-if="!isLoading">{{ buttonText }}</div>
           <div v-else class="spinner">
@@ -22,7 +22,7 @@
     </section>
     <strong
       style="white-space: pre-wrap; word-wrap: break-word"
-      v-html="body"
+      v-html="convertToLink"
     ></strong>
     <section v-if="hasImages" class="image-container">
       <div v-for="(img, i) in this.article.imagePath" :key="i">
@@ -55,9 +55,7 @@ export default {
       return this.$route.params.id;
     },
     convertToLink() {
-      return this.convertNewLineChars(
-        this.textToLink(this.article.articleBody)
-      );
+      return this.convertNewLineChars(this.textToLink(this.body));
     },
     hasImages() {
       return this.article.imagePath.length > 0;
@@ -106,6 +104,7 @@ export default {
   },
   methods: {
     async requestAIJob(refresh = false) {
+      if (this.isLoading) return;
       this.isLoading = true;
       try {
         // JOBをリクエスト
