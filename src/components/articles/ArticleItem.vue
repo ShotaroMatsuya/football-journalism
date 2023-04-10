@@ -138,7 +138,7 @@ export default {
       return this.article.isDone;
     },
     buttonText() {
-      return this.isDone ? 'リクエスト済' : 'AIリクエスト';
+      return this.isDone ? '解析済' : 'AI解析';
     },
     sentimentFace() {
       switch (this.article.sentiment) {
@@ -248,7 +248,6 @@ li {
   border: 1px solid #424242;
   border-radius: 12px;
   padding: 1rem;
-  position: relative;
 }
 section {
   display: flex;
@@ -282,10 +281,8 @@ div {
   width: 100%;
 }
 .emoji {
-  position: absolute;
-  top: 5px;
-  left: 320px;
-  font-size: 69px;
+  font-size: 50px;
+  margin-right: 10px;
 }
 .tooltip {
   position: relative;
@@ -318,7 +315,10 @@ div {
 }
 .tooltip:hover .description {
   display: inline-block;
-  top: -105px;
-  left: 307px;
+  top: -100px;
+  left: -25px;
+}
+.btn-image {
+  width: 60px;
 }
 </style>
