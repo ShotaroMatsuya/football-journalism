@@ -81,13 +81,6 @@ export default {
   async triggerAI(context, payload) {
     // payload = {articleId: xxx, journalistId: xxx, forceRefresh: bool, isDone, lastFetch}
     // TODO:isDoneがtrueかつlastFetchがセットされていたら、ハッカしないようにする
-    if (
-      !payload.forceRefresh ||
-      payload.isDone ||
-      payload.lastFetch > new Date().getTime() - 30 * 60 * 1000
-    ) {
-      return Promise.resolve();
-    }
     const { articleId, journalistId } = payload;
     const response = await fetch(`${process.env.VUE_APP_AI_ENDPOINT_URL}`, {
       method: 'POST',

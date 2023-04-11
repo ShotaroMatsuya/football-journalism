@@ -40,7 +40,7 @@ async function main(event) {
           res.sentiment = data.Sentiment ? data.Sentiment.S : null;
           res.faces = data.Faces ? data.Faces.SS : [];
           res.keyOrgs = data.KeyOrgs ? data.KeyOrgs.SS : [];
-          res.keyPersons = data.KeyPersons ? data.keyPersons.SS : [];
+          res.keyPersons = data.KeyPerson ? data.KeyPerson.SS : [];
           results.push(res);
         }
         return {
