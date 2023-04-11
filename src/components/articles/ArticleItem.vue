@@ -63,32 +63,53 @@
         <img :src="img" />
       </div>
     </section>
-    <div v-if="hasPollyOutput">
-      <p>Pollyによる音声出力</p>
-      <audio
-        ref="audioPlayer"
-        :src="article.pollyOutput"
-        @timeupdate="updateTime"
-      ></audio>
-      <input
-        type="range"
-        min="0"
-        :max="duration"
-        v-model="currentTime"
-        @input="seek"
-      />
-      <p>
-        再生時間: {{ formatTime(currentTime) }} / {{ formatTime(duration) }}
-      </p>
-      <button @click="play">再生</button>
-      <button @click="pause">停止</button>
-    </div>
-    <div class="actions" v-if="hasJapaneseText">
-      <base-button v-if="isOriginal" @click="changeText">
-        日本語テキストに切り替える
-      </base-button>
-      <base-button v-else @click="reverseText">原文に戻す</base-button>
-    </div>
+    <hr />
+    <section>
+      <div v-if="hasPollyOutput">
+        <p>Pollyによる音声出力</p>
+        <audio
+          ref="audioPlayer"
+          :src="article.pollyOutput"
+          @timeupdate="updateTime"
+        ></audio>
+        <div class="actions">
+          <div class="range-input">
+            <p>
+              再生時間: {{ formatTime(currentTime) }} /
+              {{ formatTime(duration) }}
+            </p>
+            <input
+              type="range"
+              min="0"
+              :max="duration"
+              v-model="currentTime"
+              @input="seek"
+            />
+          </div>
+          <div class="volume-input">
+            <p>音量: {{ Math.round(volume * 100) }}%</p>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.1"
+              v-model="volume"
+              @input="setVolume"
+            />
+          </div>
+          <div class="audio-btn">
+            <base-button @click="play">再生</base-button>
+            <base-button @click="pause">停止</base-button>
+          </div>
+        </div>
+      </div>
+      <div class="actions" v-if="hasJapaneseText">
+        <base-button v-if="isOriginal" @click="changeText">
+          日本語テキストに切り替える
+        </base-button>
+        <base-button v-else @click="reverseText">原文に戻す</base-button>
+      </div>
+    </section>
   </li>
 </template>
 
@@ -104,6 +125,7 @@ export default {
       body: '',
       currentTime: 0,
       duration: 0,
+      volume: 1,
     };
   },
   computed: {
@@ -159,6 +181,9 @@ export default {
     );
   },
   methods: {
+    setVolume() {
+      this.$refs.audioPlayer.volume = this.volume;
+    },
     play() {
       this.$refs.audioPlayer.play();
     },
@@ -268,10 +293,6 @@ div {
 .controls {
   display: flex;
   justify-content: space-between;
-}
-.actions {
-  display: flex;
-  justify-content: flex-end;
 }
 .image-container {
   display: flex;
