@@ -63,7 +63,7 @@
         <img :src="img" />
       </div>
     </section>
-    <div>
+    <div v-if="hasPollyOutput">
       <p>Pollyによる音声出力</p>
       <audio
         ref="audioPlayer"
