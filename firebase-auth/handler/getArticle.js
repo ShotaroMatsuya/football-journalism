@@ -39,7 +39,7 @@ async function main(event) {
         res.sentiment = result.Sentiment ? result.Sentiment : null;
         res.faces = result.Faces ? result.Faces : [];
         res.keyOrgs = result.KeyOrgs ? result.KeyOrgs : [];
-        res.keyPersons = result.KeyPersons ? result.keyPersons : [];
+        res.keyPersons = result.KeyPerson ? result.KeyPerson : [];
 
         return {
           statusCode: 200,
