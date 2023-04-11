@@ -20,8 +20,20 @@ BEARER_TOKEN = os.environ["BEARER_TOKEN"]
 
 
 def lambda_handler(event, context):
-    contents_name = ["shotaro59432703", "fabrizioromano", "whoscored", "sofascoreint"]
-    user_id = ["1312553589965942784", "330262748", "99806132", "1054258421942358016"]
+    contents_name = [
+        "footballdaily",
+        "fabrizioromano",
+        "sofascoreint",
+        "DeadlineDayLive",
+        "LaLiga",
+    ]
+    user_id = [
+        "278038673",
+        "330262748",
+        "1054258421942358016",
+        "1030711922",
+        "423384542",
+    ]
 
     for i in range(len(user_id)):
         state = main(contents_name[i], user_id[i])
@@ -37,7 +49,6 @@ def lambda_handler(event, context):
 
 
 def main(contents_name, user_id):
-
     file_contents = ""
     state = ""
     exist_contents = ""
@@ -93,7 +104,6 @@ def main(contents_name, user_id):
 
 # Get data by scraping tweets.
 def scraping_tweets(contents_name, user_id):
-
     file_contents = []
 
     try:

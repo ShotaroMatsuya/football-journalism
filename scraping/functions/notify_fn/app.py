@@ -14,11 +14,16 @@ scraping_table = boto3.resource("dynamodb", region_name=region).Table(table_name
 
 
 def lambda_handler(event, context):
-
     mail = os.environ["NOTIFICATION_EMAIL"]
-    contents_name = ["shotaro59432703", "fabrizioromano", "whoscored", "sofascoreint"]
-    contents_flag = [True, True, True, True]
-    sabun_flag = [True, True, True, True]
+    contents_name = [
+        "footballdaily",
+        "fabrizioromano",
+        "sofascoreint",
+        "DeadlineDayLive",
+        "LaLiga",
+    ]
+    contents_flag = [True, True, True, True, True]
+    sabun_flag = [True, True, True, True, True]
 
     for i in range(len(contents_name)):
         print(i)
@@ -35,7 +40,6 @@ def lambda_handler(event, context):
 
 
 def main(mail, contents_name, contents_flag, sabun_flag):
-
     update_flag = 0
     contents = ""
     sabun = ""

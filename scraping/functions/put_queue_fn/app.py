@@ -66,7 +66,13 @@ def key_list(filename):
 def lambda_handler(event, context):
     """main."""
     try:
-        for i in ["whoscored", "fabrizioromano", "sofascoreint", "shotaro59432703"]:
+        for i in [
+            "footballdaily",
+            "fabrizioromano",
+            "sofascoreint",
+            "DeadlineDayLive",
+            "LaLiga",
+        ]:
             result = get_item(i)
             put_sqs(result)
             # 1秒スリープ処理
