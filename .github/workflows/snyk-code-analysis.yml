@@ -289,7 +289,7 @@ jobs:
           done
       - name: Notify slack when job failed
         if: ${{ failure() }}
-        uses: slackapi/slack-github-action@v1.16.0
+        uses: slackapi/slack-github-action@v1.23.0
         with:
           payload: |
             {
