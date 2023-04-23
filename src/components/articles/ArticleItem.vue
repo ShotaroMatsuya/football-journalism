@@ -220,22 +220,24 @@ export default {
           console.log('実行済み');
           return;
         }
-        await this.$store.dispatch('articles/triggerAI', {
-          articleId: this.article.articleId,
-          journalistId: this.journalistId,
-          forceRefresh: refresh,
-          isDone: this.isDone,
-          lastFetch: this.article.lastFetch ? this.article.lastFetch : 0,
-        });
+        await this.triggerAI(refresh);
         await this.checkStatus();
         // jobが完了したらarticlesを再度get
         await this.updateArticle();
-        console.log(this.article);
       } catch (error) {
         this.error = error.message || 'Something went wrong!';
       } finally {
         this.isLoading = false;
       }
+    },
+    async triggerAI(refresh) {
+      return await this.$store.dispatch('articles/triggerAI', {
+        articleId: this.article.articleId,
+        journalistId: this.journalistId,
+        forceRefresh: refresh,
+        isDone: this.isDone,
+        lastFetch: this.article.lastFetch ? this.article.lastFetch : 0,
+      });
     },
     async checkStatus() {
       return await this.$store.dispatch('articles/getStatus', {
