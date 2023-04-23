@@ -15,7 +15,7 @@ beforeEach(() => {
   jest.clearAllMocks();
 });
 
-describe.only('ArticleItem', () => {
+describe('ArticleItem', () => {
   const props = {
     accountName: 'https://twitter.com/fabrizioromano',
     username: 'fabrizioromano',
