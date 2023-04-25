@@ -30,7 +30,7 @@
     "cypress": "^12.10.0",
     "cypress-visual-regression": "^3.0.0",
     "eslint": "^6.7.2",
-    "eslint-config-prettier": "^8.8.0",
+    "eslint-config-prettier": "^6.15.0",
     "eslint-plugin-cypress": "^2.13.2",
     "eslint-plugin-vue": "^7.0.0-0",
     "firebase-tools": "^11.8.0",
