@@ -3,11 +3,11 @@ WORKDIR /desp
 
 COPY package*.json ./
 # npm cache リセットここから
-RUN rm -rf node_modules
-RUN rm package-lock.json
-RUN npm cache clean --force
-RUN npm install --verbose
-# RUN npm ci
+# RUN rm -rf node_modules
+# RUN rm package-lock.json
+# RUN npm cache clean --force
+# RUN npm install --verbose
+RUN npm ci
 
 
 # runtime環境を作成
