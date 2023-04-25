@@ -24,15 +24,15 @@ jobs:
           command: echo ${CIRCLE_BRANCH}
       - restore_cache:
           keys:
-            - npm-{{ checksum "package-lock.json" }}
+            - npm-{{ checksum "package.json" }}
             - npm-
       - run:
           name: Install dependencies
-          command: npm ci
+          command: npm install
       - save_cache:
           paths:
             - node_modules
-          key: npm-{{ checksum "package-lock.json" }}
+          key: npm-{{ checksum "package.json" }}
   linting:
     executor: default
     steps:
@@ -42,7 +42,7 @@ jobs:
           command: echo ${CIRCLE_BRANCH}
       - restore_cache:
           keys:
-            - app-{{ checksum "package-lock.json" }}
+            - app-{{ checksum "package.json" }}
             - app-
       - run:
           name: Run linting
@@ -56,7 +56,7 @@ jobs:
           command: echo ${CIRCLE_BRANCH}
       - restore_cache:
           keys:
-            - npm-{{ checksum "package-lock.json" }}
+            - npm-{{ checksum "package.json" }}
             - npm-
       - run:
           name: Run prettier check
@@ -70,7 +70,7 @@ jobs:
           command: echo ${CIRCLE_BRANCH}
       - restore_cache:
           keys:
-            - npm-{{ checksum "package-lock.json" }}
+            - npm-{{ checksum "package.json" }}
             - npm-
       - run:
           name: Run Component Test
