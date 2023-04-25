@@ -28,7 +28,7 @@ jobs:
             - npm-
       - run:
           name: Install dependencies
-          command: npm install
+          command: npm ci
       - save_cache:
           paths:
             - node_modules
@@ -42,8 +42,8 @@ jobs:
           command: echo ${CIRCLE_BRANCH}
       - restore_cache:
           keys:
-            - app-{{ checksum "package-lock.json" }}
-            - app-
+            - npm-{{ checksum "package-lock.json" }}
+            - npm-
       - run:
           name: Run linting
           command: npm run lint
