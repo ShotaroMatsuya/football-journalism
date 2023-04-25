@@ -28,7 +28,7 @@ jobs:
             - npm-
       - run:
           name: Install dependencies
-          command: NDOE_ENV=development npm CI
+          command: NDOE_ENV=development npm ci
       - save_cache:
           paths:
             - node_modules
