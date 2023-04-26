@@ -35,26 +35,28 @@ async function main(event, sub) {
     ExpressionAttributeValues: {
       ':s': { S: sub },
     },
-    KeyConditionExpression: 'JournalistID = :s',
+    FilterExpression: 'JournalistID = :s',
     TableName: 'Requests',
   };
   return await dynamodb
-    .query(params)
+    .scan(params)
     .promise()
     .then((datas) => {
       console.log(datas);
       if (datas.Count > 0) {
-        let res = {};
+        let results = [];
         for (const data of datas.Items) {
+          let res = {};
           res.username = data.UserID.S;
           res.message = data.Message.S;
           res.id = data.CreateDate.S;
+          results.push(res);
         }
 
         return {
           statusCode: 200,
           ok: true,
-          body: JSON.stringify({ [sub]: res }),
+          body: JSON.stringify({ [sub]: results }),
         };
       } else {
         return {
