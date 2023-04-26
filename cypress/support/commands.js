@@ -183,3 +183,13 @@ Cypress.Commands.add('fetchNoRequests', () => {
     }
   );
 });
+
+Cypress.Commands.add('mockAuthRequest', () => {
+  cy.intercept({
+    method: 'POST',
+    url: 'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword*'
+  },{
+    statusCode: 200,
+    fixture: 'success-auth.json'
+  }).as('mock-auth-request');
+})
