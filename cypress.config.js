@@ -2,6 +2,7 @@ const { defineConfig } = require('cypress');
 const getCompareSnapshotsPlugin = require('cypress-visual-regression/dist/plugin');
 
 module.exports = defineConfig({
+  projectId: 'uedm1r',
   screenshotsFolder: './cypress/snapshots/actual',
   trashAssetsBeforeRuns: true,
   video: false,
