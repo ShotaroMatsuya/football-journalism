@@ -1,6 +1,10 @@
 <template>
   <form @submit.prevent="submitForm">
-    <div class="form-control" :class="{ invalid: !username.isValid }">
+    <div
+      class="form-control"
+      data-testid="username-form"
+      :class="{ invalid: !username.isValid }"
+    >
       <label for="username">UserName</label>
       <input
         type="text"
@@ -10,7 +14,11 @@
       />
       <p v-if="!username.isValid">UserName must not be empty.</p>
     </div>
-    <div class="form-control" :class="{ invalid: !accountName.isValid }">
+    <div
+      class="form-control"
+      data-testid="accountName-form"
+      :class="{ invalid: !accountName.isValid }"
+    >
       <label for="accountName">AccountName</label>
       <input
         type="text"
@@ -20,7 +28,11 @@
       />
       <p v-if="!accountName.isValid">AccountName must not be empty.</p>
     </div>
-    <div class="form-control" :class="{ invalid: !description.isValid }">
+    <div
+      class="form-control"
+      data-testid="description-form"
+      :class="{ invalid: !description.isValid }"
+    >
       <label for="description">Description</label>
       <textarea
         id="description"
@@ -30,7 +42,11 @@
       ></textarea>
       <p v-if="!description.isValid">Description must be not be empty.</p>
     </div>
-    <div class="form-control" :class="{ invalid: !areas.isValid }">
+    <div
+      class="form-control"
+      data-testid="areas-form"
+      :class="{ invalid: !areas.isValid }"
+    >
       <h3>Areas of Journalism</h3>
       <div>
         <input
@@ -72,7 +88,7 @@
         />
         <label for="variety">その他</label>
       </div>
-      <p v-if="!areas.isValid">
+      <p v-if="!areas.isValid" data-testid="areas-invalid">
         At least one Journalism type must be selected.
       </p>
     </div>

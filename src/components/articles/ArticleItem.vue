@@ -66,7 +66,7 @@
     <hr />
     <section>
       <div v-if="hasPollyOutput">
-        <p>Pollyによる音声出力</p>
+        <p data-testid="polly-output">Pollyによる音声出力</p>
         <audio
           ref="audioPlayer"
           :src="article.pollyOutput"
@@ -103,11 +103,20 @@
           </div>
         </div>
       </div>
-      <div class="actions" v-if="hasJapaneseText">
-        <base-button v-if="isOriginal" @click="changeText">
+      <div class="actions convert-text" v-if="hasJapaneseText">
+        <base-button
+          data-testid="convert-to-jpn-btn"
+          v-if="isOriginal"
+          @click="changeText"
+        >
           日本語テキストに切り替える
         </base-button>
-        <base-button v-else @click="reverseText">原文に戻す</base-button>
+        <base-button
+          data-testid="convert-to-original-btn"
+          v-else
+          @click="reverseText"
+          >原文に戻す</base-button
+        >
       </div>
     </section>
   </li>
@@ -211,22 +220,24 @@ export default {
           console.log('実行済み');
           return;
         }
-        await this.$store.dispatch('articles/triggerAI', {
-          articleId: this.article.articleId,
-          journalistId: this.journalistId,
-          forceRefresh: refresh,
-          isDone: this.isDone,
-          lastFetch: this.article.lastFetch ? this.article.lastFetch : 0,
-        });
+        await this.triggerAI(refresh);
         await this.checkStatus();
         // jobが完了したらarticlesを再度get
         await this.updateArticle();
-        console.log(this.article);
       } catch (error) {
         this.error = error.message || 'Something went wrong!';
       } finally {
         this.isLoading = false;
       }
+    },
+    async triggerAI(refresh) {
+      return await this.$store.dispatch('articles/triggerAI', {
+        articleId: this.article.articleId,
+        journalistId: this.journalistId,
+        forceRefresh: refresh,
+        isDone: this.isDone,
+        lastFetch: this.article.lastFetch ? this.article.lastFetch : 0,
+      });
     },
     async checkStatus() {
       return await this.$store.dispatch('articles/getStatus', {

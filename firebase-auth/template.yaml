@@ -112,7 +112,7 @@ Resources:
     Properties:
       Runtime: nodejs16.x
       CodeUri: handler/
-      Handler: getRequest.getRequestByJournalistId
+      Handler: getRequests.getRequestByJournalistId
       Policies:
         - AWSXRayDaemonWriteAccess
         - DynamoDBCrudPolicy:

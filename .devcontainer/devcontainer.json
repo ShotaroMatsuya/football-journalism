@@ -1,0 +1,28 @@
+{
+  // コンテナ名
+  "name": "Existing Docker Compose (Extend)",
+  // docker-compose.ymlのファイルパス
+  "dockerComposeFile": ["../docker-compose.yml"],
+  // 起動するサービス名
+  "service": "front",
+  // コンテナ内でのユーザー
+  "remoteUser": "node",
+  // VSCodeで開くコンテナ内のパス
+  "workspaceFolder": "/app",
+  "settings": {},
+  // コンテナ内で使用する拡張機能のID
+  "extensions": [
+    "octref.vetur",
+    "formulahendry.auto-rename-tag",
+    "streetsidesoftware.code-spell-checker",
+    "dbaeumer.vscode-eslint",
+    "eamodio.gitlens",
+    "oderwat.indent-rainbow",
+    "esbenp.prettier-vscode",
+    "fabiospampinato.vscode-todo-plus",
+    "Gruntfuggly.todo-tree"
+  ],
+  // "forwardPorts": [],
+  "runServices": ["front"],
+  "shutdownAction": "none"
+}

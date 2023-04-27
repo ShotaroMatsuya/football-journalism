@@ -1,17 +1,22 @@
 orbs:
-  slack: circleci/slack@4.12.1
-
+  slack: circleci/slack@4.10.1
+  cypress: cypress-io/cypress@2.2.0
 version: 2.1
 executors:
+  cypress-docker:
+    docker:
+      - image: 'shotaromatsuya/cypress-base:16'
   default:
     working_directory: ~/workspace
     docker:
-      - image: circleci/node:16.13.0
+      - image: shotaromatsuya/fbj:16
   slack-executor:
     docker:
       - image: 'cibuilds/base:latest'
     resource_class: small
-
+environment:
+  TZ: '/usr/share/zoneinfo/Asia/Tokyo'
+  NODE_ENV: 'development'
 jobs:
   build:
     executor: default
@@ -22,15 +27,15 @@ jobs:
           command: echo ${CIRCLE_BRANCH}
       - restore_cache:
           keys:
-            - app-{{ checksum "package.json" }}
-            - app-
+            - npm-{{ checksum "package-lock.json" }}
+            - npm-
       - run:
           name: Install dependencies
-          command: npm install
+          command: npm ci
       - save_cache:
           paths:
             - node_modules
-          key: app-{{ checksum "package.json" }}
+          key: npm-{{ checksum "package-lock.json" }}
   linting:
     executor: default
     steps:
@@ -40,11 +45,39 @@ jobs:
           command: echo ${CIRCLE_BRANCH}
       - restore_cache:
           keys:
-            - app-{{ checksum "package.json" }}
-            - app-
+            - npm-{{ checksum "package-lock.json" }}
+            - npm-
       - run:
           name: Run linting
           command: npm run lint
+  prettier:
+    executor: default
+    steps:
+      - checkout
+      - run:
+          name: Show current branch
+          command: echo ${CIRCLE_BRANCH}
+      - restore_cache:
+          keys:
+            - npm-{{ checksum "package-lock.json" }}
+            - npm-
+      - run:
+          name: Run prettier check
+          command: npm run prettier:check
+  test:
+    executor: default
+    steps:
+      - checkout
+      - run:
+          name: Show current branch
+          command: echo ${CIRCLE_BRANCH}
+      - restore_cache:
+          keys:
+            - npm-{{ checksum "package-lock.json" }}
+            - npm-
+      - run:
+          name: Run Component Test
+          command: npm run test:unit
   deploy:
     executor: default
     steps:
@@ -79,12 +112,38 @@ workflows:
       - linting:
           requires:
             - build
-          # filters:
-          #   branches:
-          #     only: main
-      - deploy:
+      - prettier:
+          requires:
+            - build
+      - test:
           requires:
             - linting
+            - prettier
+      - cypress/install:
+          cache-key: >-
+            cache-{{ arch }}-{{ .Branch }}-{{ checksum "package-lock.json" }}
+          filters:
+            branches:
+              only: main
+      - cypress/run:
+          cache-key: >-
+            cache-{{ arch }}-{{ .Branch }}-{{ checksum "package-lock.json" }}
+          requires:
+            - cypress/install
+          filters:
+            branches:
+              only: main
+          record: true
+          parallel: true
+          parallelism: 2
+          group: 2 machines
+          executor: cypress-docker
+          start: npm run serve
+          wait-on: 'http://localhost:8080'
+      - deploy:
+          requires:
+            - test
+            - cypress/run
           filters:
             branches:
               only: main

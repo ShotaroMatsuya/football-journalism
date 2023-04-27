@@ -44,13 +44,15 @@ export default {
     const requests = [];
 
     for (const key in responseData) {
-      const request = {
-        id: responseData[key].id,
-        journalistId: journalistId,
-        username: responseData[key].username,
-        message: responseData[key].message,
-      };
-      requests.push(request);
+      for (const value of responseData[key]) {
+        const request = {
+          id: value.id,
+          journalistId: journalistId,
+          username: value.username,
+          message: value.message,
+        };
+        requests.push(request);
+      }
     }
     context.commit('setRequests', requests);
   },

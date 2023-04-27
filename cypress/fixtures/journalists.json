@@ -1,0 +1,44 @@
+[
+  {
+    "id": "330262748",
+    "accountName": "https://twitter.com/fabrizioromano",
+    "username": "Fabrizio Romano",
+    "description": "\"Fabrizio Romano is an Italian football journalist. He has worked for Sky Sport Italy, and is regarded as one of the most world-renowned gossip sources for football transfers.\"",
+    "areas": ["transfer"]
+  },
+  {
+    "id": "l4rpc4pxnMfroihnI7V9ZMvHf042",
+    "accountName": "@testuser",
+    "username": "テストユーザー",
+    "description": "テストユーザーです",
+    "areas": ["variety"]
+  },
+  {
+    "id": "1054258421942358016",
+    "accountName": "https://twitter.com/sofascoreint",
+    "username": "sofascoreint",
+    "description": "Stats and insights related to football ⚽ | \\n@SofaScoreBR\\n | \\n@SofaScoreLA\\n | \\n@SofaScoreARB\\n Download SofaScore live score app: http://bit.ly/2RKyThj",
+    "areas": ["stats"]
+  },
+  {
+    "id": "278038673",
+    "accountName": "https://twitter.com/footballdaily",
+    "username": "Football Daily",
+    "description": "Breaking news, press conferences, interviews & viral clips from the world of football 🌏 ⚽️\n\nContact: footballdailyuk@gmail.com",
+    "areas": ["stats", "variety"]
+  },
+  {
+    "id": "423384542",
+    "accountName": "https://twitter.com/LaLiga",
+    "username": "LaLiga",
+    "description": "¡Bienvenidos a la cuenta oficial de La Liga en Twitter! 🇪🇸⚽️ Disfruta de las últimas noticias, resultados y momentos emocionantes de la mejor liga de fútbol de España. ¡Síguenos para estar al tanto de todo! #LaLiga #Fútbol #España",
+    "areas": ["variety"]
+  },
+  {
+    "id": "1030711922",
+    "accountName": "https://twitter.com/DeadlineDayLive",
+    "username": "DeadlineDayLive",
+    "description": "📝 The biggest, and the best. Bringing you all the latest news and updates, all year round. 18+",
+    "areas": ["transfer", "variety"]
+  }
+]

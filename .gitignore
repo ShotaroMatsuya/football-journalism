@@ -26,3 +26,8 @@ pnpm-debug.log*
 
 .dccache
 TODO
+
+.eslintcache
+
+cypress/snapshots/actual/**/*.png
+cypress/snapshots/diff/**/*.png
