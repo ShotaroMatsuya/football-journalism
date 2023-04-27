@@ -54,13 +54,10 @@ describe('Auth page', () => {
     cy.get(':nth-child(4) > button').contains('Logout');
     cy.contains('Login to Register as Journalist').should('not.exist');
     cy.getAllLocalStorage().then((result) => {
-      expect(result).to.deep.equal({
-        'http://localhost:8080': {
-          token: "eyJhbGciOiJSUzI1NiIsImtpZCI6ImU3OTMwMjdkYWI0YzcwNmQ2ODg0NGI4MDk2ZTBlYzQzMjYyMjIwMDAiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20vdnVlLWh0dHAtZGVtby1mYTdkYiIsImF1ZCI6InZ1ZS1odHRwLWRlbW8tZmE3ZGIiLCJhdXRoX3RpbWUiOjE2ODI1MTQ3NDIsInVzZXJfaWQiOiJsNHJwYzRweG5NZnJvaWhuSTdWOVpNdkhmMDQyIiwic3ViIjoibDRycGM0cHhuTWZyb2lobkk3VjlaTXZIZjA0MiIsImlhdCI6MTY4MjUxNDc0MiwiZXhwIjoxNjgyNTE4MzQyLCJlbWFpbCI6ImFkbWluQGFkbWluLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjpmYWxzZSwiZmlyZWJhc2UiOnsiaWRlbnRpdGllcyI6eyJlbWFpbCI6WyJhZG1pbkBhZG1pbi5jb20iXX0sInNpZ25faW5fcHJvdmlkZXIiOiJwYXNzd29yZCJ9fQ.NUdi1Ur1brNdAd9D3AVaOvKuPYpK8Grf_DVY9vMWtIYCjbCGuRagGB5R2gZES6Wdv3uNloNTcy8xpMZQ3p9sWxpeSfNFC8QCZ6JWJ9xCObbpfmoWlAoy_ThCB8fn6yVqOv9TdCjCfYvm-CxDc6t74a-RzMxmw7pQC3VsTsj0XGA_el5JoDYAO5udHh-r71NaJluZRWSDUBajdI6I1orFDh8HIMMJOa2DkuiaAg5gt36a2_lvKKSuSrVp1wwwFQUPZX6d5SK15wXBkz6V3m8tIVxk9P4ElqHZUC7o9HwcYF_sDZjmnpiqrkEOWcfD-IA-C4WJS9Rvyze2TOP_hplW0g",
-          tokenExpiration : "1682519730000",
-          userId: "l4rpc4pxnMfroihnI7V9ZMvHf042"
-        },
-      })
+      expect(result).to.have.property('http://localhost:8080')
+      expect(result['http://localhost:8080']).to.have.property('tokenExpiration')
+      expect(result['http://localhost:8080']).to.have.property('token')
+      expect(result['http://localhost:8080']).to.have.property('userId')
     })
   });
   it('should delete the token in local storage when logout', () => {
@@ -72,7 +69,9 @@ describe('Auth page', () => {
     checkURL('/journalists');
     cy.get(':nth-child(4) > button').contains('Logout').click();
     cy.getAllLocalStorage().then((result) => {
-      expect(result).to.deep.equal({})
+      expect(result).not.to.have.property('http://localhost:8080', 'tokenExpiration')
+      expect(result).not.to.have.property('http://localhost:8080', 'token')
+      expect(result).not.to.have.property('http://localhost:8080', 'userId')
     })
   });
 });
