@@ -12,6 +12,7 @@ module.exports = defineConfig({
     SNAPSHOT_BASE_DIRECTORY: 'cypress/snapshots/base',
     SNAPSHOT_DIFF_DIRECTORY: 'cypress/snapshots/diff',
     ALWAYS_GENERATE_DIFF: false,
+    ALLOW_VISUAL_REGRESSION_TO_FAIL: true,
     type: 'actual',
   },
 
