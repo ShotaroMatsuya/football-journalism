@@ -2,39 +2,24 @@
     "compilerOptions": {
       "target": "esnext",
       "module": "esnext",
-      "importHelpers": true,
       "moduleResolution": "node",
-      "experimentalDecorators": true,
       "esModuleInterop": true,
-      "allowSyntheticDefaultImports": true,
-      "noImplicitThis": true,
-      "allowJs": true,
+      // "allowSyntheticDefaultImports": true,
+      // "noImplicitThis": true,
+      // "allowJs": true,
       "sourceMap": false,
-      "baseUrl": ".",
-        "isolatedModules": false,
+      // "isolatedModules": false,
       "types": [
-        "jest",
+        "@types/jest",
         "cypress",
         "cypress-visual-regression"
       ],
-      "paths": {
-        "@/*": [
-          "src/*"
-        ]
-      },
       "lib": [
         "esnext",
-        "dom",
-        "dom.iterable"
+        "dom"
       ],
-      "outDir": "dist"
     },
     "include": [
-      "src/**/*.ts",
-      "src/**/*.tsx",
-      "src/**/*.vue",
-      "tests/**/*.ts",
-      "tests/**/*.tsx",
       "cypress/**/*"
     ],
     "exclude": [
