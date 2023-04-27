@@ -31,3 +31,5 @@ TODO
 
 cypress/snapshots/actual/**/*.png
 cypress/snapshots/diff/**/*.png
+
+cypress/videos/**/*
