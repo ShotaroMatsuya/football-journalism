@@ -1,4 +1,5 @@
-const testDevices = ['macbook-11', 'ipad-2', 'iphone-xr'];
+///<reference path="../../support/index.d.ts" />
+const testDevices: Cypress.ViewportPreset[] = ['macbook-11', 'ipad-2', 'iphone-xr'];
 
 beforeEach(() => {
   cy.login('admin@admin.com', 'password');
@@ -38,3 +39,6 @@ describe('access to received requests page', () => {
     });
   });
 });
+
+
+export {};

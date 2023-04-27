@@ -1,3 +1,4 @@
+///<reference path="../../support/index.d.ts" />
 import { checkURL } from '../../support/utils';
 beforeEach(() => {
   cy.clock(new Date(2023, 3, 26, 22, 35, 30).getTime(), ['Date']);
