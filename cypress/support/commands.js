@@ -41,6 +41,16 @@ Cypress.Commands.add('fetchJournalists', () => {
   ).as('fetch-journalists');
 });
 
+Cypress.Commands.add('postRequest', () => {
+  cy.intercept({
+    method: 'POST',
+    url: 'https://j611frcsul.execute-api.ap-northeast-1.amazonaws.com/Prod/requests/*'
+  }, {
+    stausCode: 200,
+    body: {}
+  })
+})
+
 Cypress.Commands.add('fetchArticlesWithAnalysis', () => {
   cy.intercept(
     {
@@ -77,6 +87,15 @@ Cypress.Commands.add('fetchNoArticles', () => {
     }
   ).as('no-articles');
 });
+Cypress.Commands.add('fetchSingleArticle', () => {
+  cy.intercept({
+    method: 'GET',
+    url: 'https://j611frcsul.execute-api.ap-northeast-1.amazonaws.com/Prod/article/**/*',
+  }, {
+    statusCode: 200,
+    fixture: 'single-article.json'
+  }).as('resultArticle')
+})
 
 Cypress.Commands.add('triggerAI', () => {
   cy.intercept(
@@ -97,7 +116,7 @@ Cypress.Commands.add('triggerAI', () => {
 Cypress.Commands.add('getCompleteStatus', () => {
   cy.intercept(
     {
-      method: 'GET',
+      method: 'POST',
       url: 'https://uzfy92f1x6.execute-api.ap-northeast-1.amazonaws.com/Prod/api/status',
     },
     {
@@ -110,7 +129,7 @@ Cypress.Commands.add('getCompleteStatus', () => {
 Cypress.Commands.add('getFailedStatus', () => {
   cy.intercept(
     {
-      method: 'GET',
+      method: 'POST',
       url: 'https://uzfy92f1x6.execute-api.ap-northeast-1.amazonaws.com/Prod/api/status',
     },
     {
@@ -123,7 +142,7 @@ Cypress.Commands.add('getFailedStatus', () => {
 Cypress.Commands.add('getRunningStatus', () => {
   cy.intercept(
     {
-      method: 'GET',
+      method: 'POST',
       url: 'https://uzfy92f1x6.execute-api.ap-northeast-1.amazonaws.com/Prod/api/status',
     },
     {
@@ -136,12 +155,12 @@ Cypress.Commands.add('getRunningStatus', () => {
 Cypress.Commands.add('getArticle', () => {
   cy.intercept(
     {
-      method: 'GET',
+      method: 'POST',
       url: 'https://j611frcsul.execute-api.ap-northeast-1.amazonaws.com/Prod/articles/*',
     },
     {
       statusCode: 200,
-      fixture: 'get-article.json',
+      fixture: 'get-article.json'
     }
   ).as('get-article');
 });
@@ -168,7 +187,7 @@ Cypress.Commands.add('fetchRequests', () => {
       statusCode: 200,
       fixture: 'requests.json',
     }
-  );
+  ).as('requests');
 });
 
 Cypress.Commands.add('fetchNoRequests', () => {
@@ -181,7 +200,7 @@ Cypress.Commands.add('fetchNoRequests', () => {
       statusCode: 404,
       fixture: 'requests-no-requests.json',
     }
-  );
+  ).as('no-requests');
 });
 
 Cypress.Commands.add('mockAuthRequest', () => {
@@ -192,4 +211,14 @@ Cypress.Commands.add('mockAuthRequest', () => {
     statusCode: 200,
     fixture: 'success-auth.json'
   }).as('mock-auth-request');
+})
+
+Cypress.Commands.add('mockRegisterRequest',() => {
+  cy.intercept({
+    method: 'PUT',
+    url: 'https://j611frcsul.execute-api.ap-northeast-1.amazonaws.com/Prod/journalist/*'
+  },{
+    statusCode: 403,
+    body: {"message":"Unauthorized"}
+  })
 })
