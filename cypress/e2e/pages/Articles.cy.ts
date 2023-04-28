@@ -1,3 +1,5 @@
+///<reference path="../../support/index.d.ts" />
+
 beforeEach(() => {
   cy.triggerAI()
   cy.fetchSingleArticle()
@@ -47,7 +49,7 @@ describe('Articles page', () => {
     cy.get('.audio-btn > :nth-child(1)').click()
     // eslint-disable-next-line cypress/no-unnecessary-waiting
     cy.wait(5700)
-    cy.get('.audio-btn > :nth-child(2)').click(1)
+    cy.get('.audio-btn > :nth-child(2)').click()
     cy.get('.range-input > p').should('contain', '0:05')
     cy.get('.volume-input > p').should('contain', '10%')
   });

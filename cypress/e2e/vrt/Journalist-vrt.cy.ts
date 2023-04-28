@@ -1,4 +1,5 @@
-const testDevices = ['macbook-11', 'ipad-2', 'samsung-note9'];
+///<reference path="../../support/index.d.ts" />
+const testDevices: Cypress.ViewportPreset[] = ['macbook-11', 'ipad-2', 'samsung-note9'];
 
 beforeEach(() => {
   cy.fetchJournalists();
@@ -54,3 +55,5 @@ describe('すべてのcheckを外しているとき', () => {
     });
   });
 });
+
+export {};

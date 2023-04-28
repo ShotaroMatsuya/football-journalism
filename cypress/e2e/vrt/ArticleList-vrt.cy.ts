@@ -1,4 +1,5 @@
-const testDevices = ['macbook-11', 'ipad-2', 'iphone-xr'];
+///<reference path="../../support/index.d.ts" />
+const testDevices: Cypress.ViewportPreset[] = ['macbook-11', 'ipad-2', 'iphone-xr'];
 
 beforeEach(() => {
   cy.fetchJournalists();
@@ -70,3 +71,5 @@ describe('access to article list page(no articles)', () => {
     });
   });
 });
+
+export {};

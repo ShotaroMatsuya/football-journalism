@@ -1,3 +1,4 @@
+///<reference path="../../support/index.d.ts" />
 import { checkURL } from '../../support/utils';
 
 beforeEach(() => {

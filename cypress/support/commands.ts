@@ -1,3 +1,4 @@
+///<reference path="index.d.ts" />
 // ***********************************************
 // This example commands.js shows you how to
 // create various custom commands and overwrite
@@ -24,8 +25,7 @@
 // -- This will overwrite an existing command --
 // Cypress.Commands.overwrite('visit', (originalFn, url, options) => { ... })
 import { checkURL } from './utils';
-const compareSnapshotCommand = require('cypress-visual-regression/dist/command');
-
+import compareSnapshotCommand from 'cypress-visual-regression/dist/command';
 compareSnapshotCommand();
 
 Cypress.Commands.add('fetchJournalists', () => {
@@ -108,9 +108,6 @@ Cypress.Commands.add('triggerAI', () => {
       fixture: 'statemachine-start.json',
     }
   ).as('trigger-ai');
-  // https://j611frcsul.execute-api.ap-northeast-1.amazonaws.com/Prod/journalist
-  // https://j611frcsul.execute-api.ap-northeast-1.amazonaws.com/Prod/articles/*
-  // https://uzfy92f1x6.execute-api.ap-northeast-1.amazonaws.com/Prod/api
 });
 
 Cypress.Commands.add('getCompleteStatus', () => {
