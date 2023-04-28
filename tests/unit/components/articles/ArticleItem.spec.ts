@@ -1,9 +1,8 @@
-import ArticleItem from '@/components/articles/ArticleItem';
+import ArticleItem from '@/components/articles/ArticleItem.vue';
 import store from '@/store';
-import { config, shallowMount } from '@vue/test-utils';
+import { shallowMount } from '@vue/test-utils';
 import flushPromises from 'flush-promises';
 
-config.showDeprecationWarnings = false;
 const buildWrapper = (options = {}) => {
   return shallowMount(ArticleItem, {
     store,
