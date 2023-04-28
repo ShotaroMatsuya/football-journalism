@@ -8,16 +8,12 @@ module.exports = {
   extends: [
     'plugin:vue/vue3-essential',
     'eslint:recommended',
-    'plugin:cypress/recommended',
     'prettier',
   ],
-  plugins: ['@typescript-eslint', 'cypress'],
   parserOptions: {
-    parser: '@typescript-eslint/parser'
+    parser: 'babel-eslint',
   },
   rules: {
-    "no-unused-vars": "off",
-    "@typescript-eslint/no-unused-vars": "error",
     'no-console': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
     'no-debugger': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
   },
