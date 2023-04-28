@@ -1,5 +1,5 @@
-import { defineConfig } from "cypress";
-import getCompareSnapshotsPlugin from "cypress-visual-regression/dist/plugin";
+import { defineConfig } from 'cypress';
+import getCompareSnapshotsPlugin from 'cypress-visual-regression/dist/plugin';
 
 export default defineConfig({
   projectId: 'uedm1r',
@@ -14,6 +14,8 @@ export default defineConfig({
     ALWAYS_GENERATE_DIFF: false,
     ALLOW_VISUAL_REGRESSION_TO_FAIL: true,
     type: "actual",
+    trashAssetsBeforeRuns: true,
+    video: false
   },
 
   viewportWidth: 1280,
