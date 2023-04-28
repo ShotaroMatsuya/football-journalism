@@ -9,8 +9,8 @@ import BaseBadge from './components/ui/BaseBadge.vue';
 import BaseSpinner from './components/ui/BaseSpinner.vue';
 import BaseSPinner2 from './components/ui/BaseSpinner2.vue';
 
-const BaseDialog = defineAsyncComponent(() =>
-  import('./components/ui/BaseDialog.vue')
+const BaseDialog = defineAsyncComponent(
+  () => import('./components/ui/BaseDialog.vue')
 );
 
 const app = createApp(App);
