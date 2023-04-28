@@ -1,8 +1,7 @@
-import ArticleForm from '@/components/articles/ArticleForm';
+import ArticleForm from '@/components/articles/ArticleForm.vue';
 import store from '@/store';
-import { config, shallowMount } from '@vue/test-utils';
+import { shallowMount } from '@vue/test-utils';
 import flushPromises from 'flush-promises';
-config.showDeprecationWarnings = false;
 const buildWrapper = (options = {}) => {
   return shallowMount(ArticleForm, {
     store,

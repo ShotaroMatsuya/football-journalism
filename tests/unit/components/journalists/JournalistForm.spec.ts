@@ -1,8 +1,8 @@
-import JournalistForm from '@/components/journalists/JournalistForm';
+import JournalistForm from '@/components/journalists/JournalistForm.vue';
 import store from '@/store';
-import { config, shallowMount } from '@vue/test-utils';
+import { shallowMount } from '@vue/test-utils';
 import flushPromises from 'flush-promises';
-config.showDeprecationWarnings = false;
+
 const buildWrapper = (options = {}) => {
   return shallowMount(JournalistForm, {
     store,
