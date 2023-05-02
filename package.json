@@ -45,7 +45,7 @@
     "jest": "^27.0.5",
     "prettier": "^2.8.8",
     "ts-jest": "^27.0.4",
-    "typescript": "^3.8.3"
+    "typescript": "^5.0.0"
   },
   "_id": "football-journalism@0.1.0"
 }
