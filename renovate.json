@@ -3,7 +3,31 @@
   "extends": [
     "config:base"
   ],
-  "matchUpdateTypes": ["patch"],
-  "automerge": true,
-  "platformAutomerge": true,
+  "packageRules": [
+    {
+      "groupName": "firebase",
+      "matchPackageNames": ["firebase-tools"],
+      "matchPackagePrefixes": ["firebase"],
+      "matchUpdateTypes": ["minor"],
+      "automerge": true,
+      "platformAutomerge": true,
+    },
+    {
+      "groupName": "eslint",
+      "matchPackageNames": ["@types/eslint", "babel-eslint"],
+      "matchPackagePrefixes": ["@typescript-eslint/", "eslint"],
+      "matchUpdateTypes": ["minor"],
+      "automerge": true,
+      "platformAutomerge": true,
+    },
+    {
+      "groupName": "aws",
+      "matchPackageNames": ["aws-sdk"],
+      "matchPackagePrefixes": ["aws"],
+      "matchUpdateTypes": ["minor"],
+      "automerge": true,
+      "platformAutomerge": true,
+    }
+]
+
 }
