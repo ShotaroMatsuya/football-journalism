@@ -55,7 +55,7 @@
     "eslint-plugin-cypress": "^2.13.3",
     "eslint-plugin-prettier": "^4.0.0",
     "eslint-plugin-vue": "^8.0.3",
-    "firebase-tools": "^12.0.0",
+    "firebase-tools": "^13.0.0",
     "flush-promises": "^1.0.2",
     "jest": "^27.0.5",
     "jest-coverage-badges": "^1.1.2",
