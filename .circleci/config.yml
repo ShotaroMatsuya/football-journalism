@@ -1,6 +1,6 @@
 orbs:
   slack: circleci/slack@4.12.5
-  cypress: cypress-io/cypress@2.2.0
+  cypress: cypress-io/cypress@3.2.0
 version: 2.1
 executors:
   cypress-docker:
@@ -120,26 +120,19 @@ workflows:
             - linting
             - prettier
       - cypress/install:
-          cache-key: >-
-            cache-{{ arch }}-{{ .Branch }}-{{ checksum "package-lock.json" }}
           filters:
             branches:
               only: main
       - cypress/run:
-          cache-key: >-
-            cache-{{ arch }}-{{ .Branch }}-{{ checksum "package-lock.json" }}
           requires:
             - cypress/install
           filters:
             branches:
               only: main
-          record: true
-          parallel: true
+          cypress-command: npx wait-on@latest http://localhost:8080 && npx cypress run --parallel --record
+          start-command: npm run serve
           parallelism: 2
-          group: 2 machines
           executor: cypress-docker
-          start: npm run serve
-          wait-on: 'http://localhost:8080'
       - deploy:
           requires:
             - test
