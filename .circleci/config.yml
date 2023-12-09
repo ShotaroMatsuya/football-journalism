@@ -3,9 +3,6 @@ orbs:
   cypress: cypress-io/cypress@3.2.0
 version: 2.1
 executors:
-  cypress-docker:
-    docker:
-      - image: 'shotaromatsuya/cypress-fj-base:20'
   default:
     working_directory: ~/workspace
     docker:
@@ -126,7 +123,6 @@ workflows:
           cypress-command: npx wait-on@latest http://localhost:8080 && npx cypress run --parallel --record
           start-command: npm run serve
           parallelism: 2
-          executor: cypress-docker
       - deploy:
           requires:
             - test
