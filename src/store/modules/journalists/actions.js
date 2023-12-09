@@ -17,7 +17,7 @@ export default {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      }
+      },
     );
 
     // const responseData = await response.json();
@@ -37,7 +37,7 @@ export default {
     }
 
     const response = await fetch(
-      `${process.env.VUE_APP_DB_HOST_URL}/journalist`
+      `${process.env.VUE_APP_DB_HOST_URL}/journalist`,
     );
     const responseData = await response.json();
 
