@@ -14,7 +14,7 @@ services:
       - ./:/app
       - node_modules:/app/node_modules:delegated
   npm:
-    image: shotaromatsuya/fbj:16
+    image: shotaromatsuya/fbj:20
     working_dir: /app
     entrypoint: ['npm']
     user: 'node:node'
@@ -38,6 +38,7 @@ services:
       - node_modules:/app/node_modules:delegated
       - ./:/app
 volumes:
+  # ボリュームに保存しているnode_modulesをホスト側にバインドする
   node_modules:
     driver_opts:
       type: none
