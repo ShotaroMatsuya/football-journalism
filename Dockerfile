@@ -1,4 +1,4 @@
-FROM shotaromatsuya/fbj:16 as desp
+FROM shotaromatsuya/fbj:20 as desp
 WORKDIR /desp
 
 COPY package*.json ./
@@ -11,7 +11,7 @@ RUN npm ci
 
 
 # runtime環境を作成
-FROM shotaromatsuya/fbj:16
+FROM shotaromatsuya/fbj:20
 WORKDIR '/app'
 
 ENV LANG C.UTF-8
