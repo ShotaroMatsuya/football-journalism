@@ -9,7 +9,7 @@ executors:
   default:
     working_directory: ~/workspace
     docker:
-      - image: shotaromatsuya/fbj:16
+      - image: shotaromatsuya/fbj:20
   slack-executor:
     docker:
       - image: 'cibuilds/base:latest'
