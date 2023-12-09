@@ -186,7 +186,7 @@ export default {
   },
   mounted() {
     this.body = this.convertNewLineChars(
-      this.textToLink(this.article.articleBody)
+      this.textToLink(this.article.articleBody),
     );
   },
   methods: {

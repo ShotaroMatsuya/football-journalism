@@ -6,7 +6,7 @@ export default {
     const journalistId = payload.journalistId;
 
     const response = await fetch(
-      `${process.env.VUE_APP_DB_HOST_URL}/articles/${journalistId}`
+      `${process.env.VUE_APP_DB_HOST_URL}/articles/${journalistId}`,
     );
     const responseData = await response.json();
 
@@ -71,7 +71,7 @@ export default {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      }
+      },
     );
     if (!response.ok) {
       console.log(response);
@@ -130,7 +130,7 @@ export default {
             Accept: '*/*',
             'Content-Type': 'application/json',
           },
-        }
+        },
       );
       const responseData = await response.json();
       if (responseData.status === 'SUCCEEDED') {
@@ -165,7 +165,7 @@ export default {
   async updateArticle(context, payload) {
     const { articleId, isDone, journalistId } = payload;
     const response = await fetch(
-      `${process.env.VUE_APP_DB_HOST_URL}/article/${journalistId}/${articleId}`
+      `${process.env.VUE_APP_DB_HOST_URL}/article/${journalistId}/${articleId}`,
     );
     const responseData = await response.json();
     if (!response.ok) {

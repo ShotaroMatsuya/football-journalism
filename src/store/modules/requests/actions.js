@@ -10,7 +10,7 @@ export default {
       {
         method: 'POST',
         body: JSON.stringify(newRequest),
-      }
+      },
     );
     const responseData = await response.json();
     if (!response.ok) {
@@ -32,7 +32,7 @@ export default {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      }
+      },
     );
     const responseData = await response.json();
 

@@ -10,7 +10,7 @@ import BaseSpinner from './components/ui/BaseSpinner.vue';
 import BaseSPinner2 from './components/ui/BaseSpinner2.vue';
 
 const BaseDialog = defineAsyncComponent(
-  () => import('./components/ui/BaseDialog.vue')
+  () => import('./components/ui/BaseDialog.vue'),
 );
 
 const app = createApp(App);
