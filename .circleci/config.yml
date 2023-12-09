@@ -5,7 +5,7 @@ version: 2.1
 executors:
   cypress-docker:
     docker:
-      - image: 'shotaromatsuya/cypress-fj-base:16'
+      - image: 'shotaromatsuya/cypress-fj-base:20'
   default:
     working_directory: ~/workspace
     docker:
