@@ -119,13 +119,7 @@ workflows:
           requires:
             - linting
             - prettier
-      - cypress/install:
-          filters:
-            branches:
-              only: main
       - cypress/run:
-          requires:
-            - cypress/install
           filters:
             branches:
               only: main
