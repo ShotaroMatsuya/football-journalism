@@ -1,4 +1,4 @@
-FROM cypress/base:20.15.1
+FROM cypress/base:20.16.0
 WORKDIR /app
 
 RUN apt-get update
