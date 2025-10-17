@@ -20,7 +20,7 @@ jobs:
       - name: Set up Ruby 2.7
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '2.7'
+          ruby-version: '2.7.8'
       - name: Set AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
